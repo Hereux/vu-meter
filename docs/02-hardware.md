@@ -22,8 +22,8 @@
 | # | Teil | Zweck | Preis (EUR) | Quelle |
 |---|---|---|---|---|
 | 1 | ESP32-2432S028R, 2.8" TFT + microSD + Touch | MCU + Display + Logging in einem | 12-16 | AliExpress, Amazon |
-| 2 | BMP581 Breakout (SparkFun Qwiic / DFRobot Gravity / generisch) | Messwandler | 8-19 | SparkFun, DFRobot, AliExpress |
-| 3 | DC/DC-Wandler 12 V -> 5 V, 2 A (MP1584 o. ä.) | Bordnetzversorgung | 2-4 | AliExpress |
+| 2 | BMP581 Breakout (SparkFun Qwiic / DFRobot Fermion / generisch) | Messwandler | 12-29 | AliExpress ~12-15, Eckstein/BerryBase ~27-29 |
+| 3 | DC/DC-Wandler 12 V -> 5 V (RECOM R-78B50-10, 6,5-32 V Eingang) | Bordnetzversorgung | 7 | Reichelt Art. 159150 |
 | 4 | TVS SMBJ24A, Schottky SS34, Sicherungshalter + 1 A Flachsicherung | Load-Dump-/Verpolschutz | 3-5 | Reichelt |
 | 5 | Elkos 470 µF/35 V + 100 µF/10 V, Ferritperle | Siebung, Störunterdrückung | 2 | Reichelt |
 | 6 | Kabel 2×0,75 mm², JST-XH-Steckverbinder, Schrumpfschlauch | Verkabelung | 4 | — |
@@ -31,7 +31,7 @@
 | 8 | Gewindeeinsätze M3 (8×), Schrauben M3×8 | Gehäuseverschraubung | 3 | — |
 | 9 | Saugnapfhalterung 30 mm (2×) oder GoPro-Mount | Befestigung Scheibe/Armaturenbrett | 4-7 | — |
 | 10 | Taster 12 mm wasserdicht (optional, sonst Touch) | Peak-Reset | 2 | — |
-| | **Summe** | | **42-66** | |
+| | **Summe** | | **55-95** | |
 
 Optional im Budgetrahmen:
 
@@ -41,7 +41,10 @@ Optional im Budgetrahmen:
 | Kalibrier-Set: Schlauch 6 mm, 60 ml Spritze, Lineal | statische Gain-Prüfung (siehe Doc 05) | 5 |
 | Bluetooth-/WLAN-Logging (nur Software) | Auswertung am Handy | 0 |
 
-**Gesamt realistisch 55-85 EUR** inkl. Kalibrierhilfsmittel — passt ins Budget.
+**Gesamt realistisch 55 EUR (AliExpress-Weg) bis 95 EUR (deutscher Weg)**
+inkl. Kalibrierhilfsmittel — beides im Budgetrahmen.
+
+Konkrete Bezugsquellen mit Artikelnummern: [08-einkaufsliste.md](08-einkaufsliste.md).
 
 ## Warum das ESP32-2432S028R-Board
 

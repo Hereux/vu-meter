@@ -10,7 +10,7 @@ erst wenn das erfüllt ist, geht es weiter.
 
 - [ ] 0.1 Sensor festlegen: BMP581 (Standard) oder BMP390 (Fallback). Verfügbarkeit und Preis prüfen.
 - [ ] 0.2 Display festlegen: ESP32-2432S028R mit 2,8" TFT (Standard) oder 1,3" OLED (bessere Sonnenlesbarkeit, kleinere Grafik).
-- [ ] 0.3 Bestellung auslösen (Stückliste in `docs/02-hardware.md`). Lieferzeit AliExpress 2-4 Wochen einplanen — deshalb zuerst bestellen, dann weiterarbeiten.
+- [ ] 0.3 Bestellung auslösen — **Einkaufsliste mit Bezugsquellen: [docs/08-einkaufsliste.md](docs/08-einkaufsliste.md)**. Lieferzeit AliExpress 2-4 Wochen einplanen.
 - [ ] 0.4 Zielspezifikation schriftlich fixieren: Messbereich 95-178 dB, Band 10-100 Hz, Anzeige RMS + Peak + f0.
 
 **Abnahme:** Bestellung raus, Spezifikation steht.
@@ -135,7 +135,7 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 |---|---|
 | Aktive Arbeitszeit | ca. 10-13 Tage, gut in Abendetappen machbar (Phase 1 erledigt) |
 | Wartezeit Lieferung | 2-4 Wochen (parallel zu Phase 1) |
-| Materialkosten | 55-85 EUR |
+| Materialkosten | 55 EUR (AliExpress) bis 95 EUR (deutsche Shops) |
 
 ## Größte Risiken
 

@@ -37,6 +37,7 @@ Mikrofonempfindlichkeit abzuhängen.
 | [docs/05-kalibrierung.md](docs/05-kalibrierung.md) | Gain-Prüfung per Wassersäule, Frequenzgang, Grenzen des Geräts |
 | [docs/06-phase1-ergebnisse.md](docs/06-phase1-ergebnisse.md) | Messergebnisse des DSP-Modells und die Befunde daraus |
 | [docs/07-warum-cpp.md](docs/07-warum-cpp.md) | Warum die Gerätesoftware C++ ist und Python die Referenz bleibt |
+| [docs/08-einkaufsliste.md](docs/08-einkaufsliste.md) | Bezugsquellen, Artikelnummern, zwei Bestellwege |
 | [firmware/README.md](firmware/README.md) | Aufbau der Firmware, Testen ohne Hardware |
 | **[TASKS.md](TASKS.md)** | **Abarbeitungsliste in 9 Phasen mit Abnahmekriterien** |
 
