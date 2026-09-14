@@ -6,7 +6,7 @@ erst wenn das erfüllt ist, geht es weiter.
 
 ---
 
-## Phase 0 — Entscheidungen und Bestellung  (~1 Tag, 55-85 EUR)
+## Phase 0 — Entscheidungen und Bestellung  (~1 Tag, 55-95 EUR)
 
 - [ ] 0.1 Sensor festlegen: BMP581 (Standard) oder BMP390 (Fallback). Verfügbarkeit und Preis prüfen.
 - [ ] 0.2 Display festlegen: ESP32-2432S028R mit 2,8" TFT (Standard) oder 1,3" OLED (bessere Sonnenlesbarkeit, kleinere Grafik).

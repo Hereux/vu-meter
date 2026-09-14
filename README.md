@@ -16,7 +16,7 @@ BHG-DB.
 | Messwandler | Absolut-Drucksensor BMP581 (kein Mikrofon) |
 | Rechner | ESP32 |
 | Versorgung | 9-18 V Bordnetz |
-| Materialkosten | 55-85 EUR |
+| Materialkosten | 55 EUR (AliExpress) bis 95 EUR (deutsche Shops) |
 
 ## Grundidee
 
