@@ -3,27 +3,73 @@
 Toolchain: **PlatformIO + Arduino-Framework für ESP32**. Bibliotheken:
 `SparkFun_BMP581_Arduino_Library`, `TFT_eSPI`, `ESP-DSP` (FFT), `SD`.
 
+> Die komplette Kette ist in Phase 1 als Referenzmodell gebaut und abgesichert:
+> `tools/dsp_model.py`, 99 Abnahmetests in `tools/test_dsp_model.py`.
+> Messergebnisse und drei daraus folgende Konstruktionsentscheidungen stehen in
+> [06-phase1-ergebnisse.md](06-phase1-ergebnisse.md).
+
 ## Signalkette
 
 ```
 BMP581 FIFO (fs ~500-622 Hz, OSR 1x, IIR aus)
-   |  Burst-Read 32 Werte alle ~50 ms
+   |  Burst-Read 32 Werte alle ~40 ms
    v
 Ringpuffer  [float Pa]
    |
-   +-- DC-/Drift-Entfernung: Hochpass 1. Ordnung @ 2 Hz  (entfernt Luftdruck, Türschlagen, Fahrtwind)
+   +-- DC-Blocker: Hochpass 1. Ordnung @ 0,5 Hz   (Luftdruck, Wetterdrift)
    |
-   +-- Bandpass Butterworth 4. Ordnung, 5-150 Hz (2 Biquads)
+   +---------------------------+
+   |                           |
+   v                           v
+Bandfilter                  Hann-FFT (N=512/1024, Hop N/4)
+Butterworth 4. Ord.         Peak-Bin + parabolische Interpolation
+HP + LP, umschaltbar        + Sinc-Korrektur pro Bin
+10-100 Hz / 5-150 Hz           |
+   |                           +-> f0 (dominante Frequenz)
+   +-> RMS Fast (125 ms)       +-> Tonpegel (Hauptkeule, Peak +/- 2 Bins)
+   +-> RMS Slow (1 s)          +-> Bandpegel (Parseval, rechteckige Grenzen)
+   +-> True-Peak               +-> Spektrum fuer die RTA-Anzeige
+   +-> Max-Hold
    |
-   +-- Sinc-Korrektur (Tabelle aus tools/spl_calc.py)
-   |
-   +---> Zeitbereich: RMS-Detektor (Fast 125 ms / Slow 1 s) + True-Peak
-   |         -> SPL_rms, SPL_peak, Max-Hold
-   |
-   +---> Frequenzbereich: Hann-Fenster, N=512, Hop N/4
-             -> Spektrum 5-150 Hz
-             -> Peak-Bin + parabolische Interpolation -> f0 auf ~0,05 Hz genau
+   +-- Sinc-Korrektur ueber f0
 ```
+
+**Die FFT hängt bewusst vor dem Bandfilter.** Läge sie dahinter, erbte die
+Frequenz- und Tonpegelanzeige die −3 dB der Filterflanke, und ein Ton genau auf
+einer Bandgrenze würde 3 dB zu niedrig angezeigt. Die Bandgrenzen wirken im
+Spektralpfad stattdessen rechteckig über die Bin-Auswahl. Die Peak-Suche läuft
+dabei ein Bin über die Bandgrenzen hinaus, sonst läuft die Interpolation bei
+einem Ton exakt auf der Grenze in ihre Begrenzung.
+
+## Messbänder
+
+Im Menü umschaltbar. Die Grenzen sind die −3-dB-Punkte des Bandfilters, wie bei
+Messfiltern üblich.
+
+| Band | Zweck |
+|---|---|
+| **10-100 Hz** | Vergleichbarkeit mit kommerziellen Bass-Metern |
+| **5-150 Hz** | erfasst Infraschall unter 10 Hz und unteren Kickbass, liest je nach Musik 1-3 dB höher |
+
+Das aktive Band steht immer in der Statuszeile. Ein Bandwechsel muss die
+Haltewerte zurücksetzen (siehe Einschwingsperre).
+
+## Koeffizienten zur Laufzeit berechnen
+
+Keine festen Koeffiziententabellen im Code. Der Sensor taktet mit einem
+internen RC-Oszillator, die reale Abtastrate weicht bis zu ±5 % vom Nennwert
+ab — eine Tabelle für „622 Hz" wäre um genau diesen Fehler daneben, sowohl in
+den Filtergrenzen als auch in der FFT-Frequenzachse. Die Firmware legt die acht
+Biquads beim Start aus der gemessenen Abtastrate aus (zwei `sin`/`cos` pro
+Sektion, vernachlässigbar).
+
+## Einschwingsperre für die Haltewerte
+
+Ein Butterworth-Bandfilter überschwingt beim Einschwingen um gut 1 dB. Ohne
+Gegenmaßnahme landet dieser Überschwinger als vermeintlicher Spitzenpegel im
+Peak-Hold — im Test **+4,10 dB statt +3,01 dB** über RMS. Nach Start,
+Peak-Reset und Bandwechsel werden die Haltewerte deshalb 150 ms lang
+eingefroren.
 
 ## Abtasttakt und Frequenzgenauigkeit
 
@@ -59,9 +105,15 @@ auf besser als 0,1 Hz bestimmbar, solange ein dominanter Ton anliegt.
 | Modus | Anzeige | Detektor |
 |---|---|---|
 | **LIVE** | große dB-Zahl + f0 + Balkenspektrum | RMS Fast (125 ms) |
-| **PEAK / BURP** | Max-Hold-Wert groß, dazu f0 bei Maximum | True-Peak, Reset per Taster |
+| **PEAK / BURP** | max. RMS groß, True-Peak als Nebenwert, f0 beim Maximum | beide, Reset per Taster |
 | **RTA** | Spektrum 10-100 Hz, 1/6-Oktav-Balken, Max-Hold | N=1024 |
-| **LOG** | läuft im Hintergrund | CSV auf microSD: `t,SPL_rms,SPL_peak,f0` @ 4 Hz |
+| **LOG** | läuft im Hintergrund | CSV auf microSD: `t,SPL_rms,SPL_peak,f0,band` @ 4 Hz |
+
+Der PEAK-Modus zeigt **beide** Maxima: den größten RMS-Wert (125 ms) groß, den
+True-Peak kleiner daneben. Bei einem Sinus liegen sie exakt 3,01 dB
+auseinander; bei echter Musik zeigt der Abstand, wie impulshaltig das Signal
+ist. Welcher Wert zitiert wird, entscheidet so der Anwender und nicht die
+Firmware.
 
 Umschaltung per Taster/Touch. Peak-Reset: langer Druck.
 
@@ -109,12 +161,24 @@ firmware/
     test_dsp.cpp        Unit-Tests gegen synthetische Sinus-Signale
 tools/
   spl_calc.py           Auslegungsrechner
+  dsp_model.py          Referenzmodell der Messkette (Phase 1)
+  test_dsp_model.py     99 Abnahmetests fuer das Modell
+  export_reference.py   erzeugt reference_vectors.h
   verify_log.py         Auswertung der CSV-Logs am PC
 ```
 
 ## Verifikation der DSP-Kette ohne Hardware
 
-`test/test_dsp.cpp` speist synthetische Signale ein (bekannte Amplitude in Pa,
-10/20/50/100 Hz) und prüft, dass der berechnete SPL-Wert auf ±0,1 dB und f0 auf
-±0,1 Hz stimmt. Das läuft als PlatformIO-Native-Test auf dem PC — damit ist die
-Mathematik schon vor dem ersten Lötpunkt abgesichert.
+Erledigt in Phase 1: das Python-Referenzmodell erreicht im Tonpfad über das
+gesamte Band **±0,03 dB und ±0,01 Hz**, Linearität über 110 … 178 dB besser als
+0,1 dB. Details in [06-phase1-ergebnisse.md](06-phase1-ergebnisse.md).
+
+`tools/export_reference.py` erzeugt daraus `firmware/test/reference_vectors.h`:
+Butterworth-Gütefaktoren, alle Biquad-Koeffizienten für fs = 500 und 622 Hz in
+beiden Bändern, Sollfrequenzgang an sechs Stützstellen, einen goldenen Vektor
+aus 64 Ein-/Ausgangswerten der Gesamtkette sowie stationäre Sollwerte für
+sieben Prüffrequenzen.
+
+`test/test_dsp.cpp` muss diese Werte reproduzieren. Die C++-Portierung ist
+damit reine Übersetzungsarbeit mit objektivem Abnahmekriterium, statt einer
+zweiten Implementierung, die man wieder neu glauben muss.

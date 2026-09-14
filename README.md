@@ -10,8 +10,8 @@ BHG-DB.
 | | |
 |---|---|
 | Messbereich | ca. 95 … 178 dB SPL |
-| Frequenzbereich | 10 … 100 Hz (bis 150 Hz nutzbar) |
-| Frequenzauflösung | 0,98 Hz (FFT), f0 auf < 0,1 Hz interpoliert |
+| Frequenzbereich | 10 … 100 Hz, im Menü auf 5 … 150 Hz umschaltbar |
+| Frequenzauflösung | 0,6-1,2 Hz (FFT), f0 auf < 0,01 Hz interpoliert |
 | Anzeige | 2,8" TFT: Pegel, Peak-Hold, dominante Frequenz, Spektrum |
 | Messwandler | Absolut-Drucksensor BMP581 (kein Mikrofon) |
 | Rechner | ESP32 |
@@ -35,18 +35,29 @@ Mikrofonempfindlichkeit abzuhängen.
 | [docs/03-firmware.md](docs/03-firmware.md) | Signalkette, FFT-Parameter, Betriebsmodi, Codestruktur |
 | [docs/04-gehaeuse.md](docs/04-gehaeuse.md) | 3D-Druck, Material, Druckport, Entkopplung, Montage |
 | [docs/05-kalibrierung.md](docs/05-kalibrierung.md) | Gain-Prüfung per Wassersäule, Frequenzgang, Grenzen des Geräts |
+| [docs/06-phase1-ergebnisse.md](docs/06-phase1-ergebnisse.md) | Messergebnisse des DSP-Modells und die Befunde daraus |
 | **[TASKS.md](TASKS.md)** | **Abarbeitungsliste in 9 Phasen mit Abnahmekriterien** |
 
 ## Werkzeuge
 
 ```bash
-python3 tools/spl_calc.py      # Auslegungsrechner: Pegel/Druck, Sensorreserve, FFT-Parameter
+python3 tools/spl_calc.py          # Auslegung: Pegel/Druck, Sensorreserve, FFT-Parameter
+python3 tools/dsp_model.py         # Referenzmodell der Messkette, Kennwerttabellen
+python3 tools/test_dsp_model.py    # 99 Abnahmetests, Exitcode 0 = bestanden
+python3 tools/export_reference.py  # Sollwerte fuer die C++-Portierung erzeugen
 ```
+
+Alles reine Standardbibliothek — kein numpy, kein scipy, keine Installation.
 
 ## Status
 
-Planungsphase. Als Nächstes: Phase 0 (Bestellung) und Phase 1 (DSP-Modell am
-PC) aus [TASKS.md](TASKS.md).
+**Phase 1 abgeschlossen** — das DSP-Referenzmodell steht und ist mit 99
+Abnahmetests abgesichert: Pegelfehler ±0,03 dB und Frequenzfehler ±0,01 Hz über
+das gesamte Messband. Ergebnisse in
+[docs/06-phase1-ergebnisse.md](docs/06-phase1-ergebnisse.md).
+
+Als Nächstes: Phase 0 (Bestellung, blockiert die Hardware-Phasen) und danach
+Phase 2 (Sensor-Bringup) aus [TASKS.md](TASKS.md).
 
 ## Hinweis
 

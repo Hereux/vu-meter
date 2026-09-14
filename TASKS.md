@@ -17,15 +17,20 @@ erst wenn das erfüllt ist, geht es weiter.
 
 ---
 
-## Phase 1 — DSP am PC verifizieren  (~1-2 Tage, 0 EUR, keine Hardware nötig)
+## Phase 1 — DSP am PC verifizieren  ✅ **abgeschlossen**
 
-- [ ] 1.1 `tools/spl_calc.py` durchrechnen, Ergebnisse gegen `docs/01-messprinzip.md` gegenprüfen.
-- [ ] 1.2 Python-Referenzmodell der kompletten Kette schreiben (`tools/dsp_model.py`): Hochpass, Bandpass 5-150 Hz, Hann-FFT, Peak-Interpolation, RMS/Peak-Detektor.
-- [ ] 1.3 Mit synthetischen Signalen testen: Sinus 10/20/40/100 Hz bei bekannter Amplitude in Pa, plus Rauschen, plus Luftdruckdrift.
-- [ ] 1.4 Prüfen: SPL-Fehler < 0,1 dB, f0-Fehler < 0,1 Hz, Einschwingzeit des Bandpasses akzeptabel (< 0,3 s).
-- [ ] 1.5 Biquad-Koeffizienten für fs = 500 Hz und 622 Hz erzeugen und als `config.h`-Tabelle exportieren.
+- [x] 1.1 `tools/spl_calc.py` durchgerechnet, gegen `docs/01-messprinzip.md` gegengeprüft.
+- [x] 1.2 Referenzmodell der kompletten Kette gebaut (`tools/dsp_model.py`): DC-Blocker, umschaltbares Bandfilter, Hann-FFT, Peak-Interpolation, RMS/Peak-Detektoren. Ohne numpy/scipy, sample-by-sample — direkt nach C++ portierbar.
+- [x] 1.3 Mit synthetischen Signalen getestet: Einzeltöne 10-100 Hz, Mehrton, Luftdruckdrift, Offsetvariation, float32-Quantisierung, Bandumschaltung.
+- [x] 1.4 Geprüft: **Tonpfad ±0,03 dB und ±0,01 Hz** über das ganze Band, Linearität 110-178 dB besser 0,1 dB, Bandfilter schwingt in 0,019 s ein. Alle Vorgaben übertroffen.
+- [x] 1.5 `tools/export_reference.py` erzeugt `firmware/test/reference_vectors.h` als Sollwertsatz für die C++-Portierung. **Keine** feste Koeffiziententabelle für die Firmware — siehe Befund 3.
 
-**Abnahme:** Modell liefert für alle Testsignale Werte innerhalb der Toleranz. Damit ist die Mathematik gesichert, bevor Hardware da ist.
+**Abnahme erfüllt:** 99 von 99 Tests bestanden (`python3 tools/test_dsp_model.py`). Ergebnisse und Befunde in [docs/06-phase1-ergebnisse.md](docs/06-phase1-ergebnisse.md).
+
+Drei Befunde, die in die Firmware einfließen:
+1. Die FFT gehört **vor** das Bandfilter, sonst erbt die Frequenzanzeige die Filterflanke (3 dB Fehler an den Bandgrenzen). Peak-Suche zusätzlich ein Bin über die Grenzen hinaus.
+2. Peak-Hold braucht eine **Einschwingsperre von 150 ms**, sonst landet der Überschwinger des Bandfilters als Spitzenpegel im Display (+4,10 statt +3,01 dB über RMS).
+3. Biquad-Koeffizienten **zur Laufzeit** aus der gemessenen Abtastrate berechnen, nicht als Tabelle hinterlegen — der RC-Oszillator des Sensors weicht bis ±5 % ab.
 
 ---
 
@@ -44,10 +49,12 @@ erst wenn das erfüllt ist, geht es weiter.
 
 ## Phase 3 — Messkette auf dem ESP32  (~2 Tage)
 
-- [ ] 3.1 Python-Modell aus Phase 1 nach C++ portieren (`dsp.cpp`, `spectrum.cpp`).
-- [ ] 3.2 PlatformIO-Native-Tests (`test/test_dsp.cpp`) mit denselben Testsignalen wie Phase 1 — C++ muss dieselben Werte liefern wie Python.
+- [ ] 3.1 Python-Modell aus Phase 1 nach C++ portieren (`dsp.cpp`, `spectrum.cpp`). Reihenfolge beibehalten: FFT vor dem Bandfilter.
+- [ ] 3.2 PlatformIO-Native-Tests (`test/test_dsp.cpp`) gegen `reference_vectors.h` — C++ muss den goldenen Vektor und die stationären Sollwerte reproduzieren.
 - [ ] 3.3 ESP-DSP-FFT einbinden, N=512, Hann, Hop N/4.
-- [ ] 3.4 Sinc-Korrektur und Peak-Interpolation ergänzen.
+- [ ] 3.4 Sinc-Korrektur (pro Bin im Spektralpfad, über f0 im Detektorpfad) und Peak-Interpolation ergänzen, Peak-Suche ein Bin über die Bandgrenzen hinaus.
+- [ ] 3.4a Biquad-Auslegung zur Laufzeit aus der in Phase 2.5 gemessenen Abtastrate.
+- [ ] 3.4b Einschwingsperre (150 ms) für Peak- und Max-Hold nach Start, Reset und Bandwechsel.
 - [ ] 3.5 Erster Realtest: Sub mit Sinus 30 Hz ansteuern, Pegel schrittweise erhöhen, Linearität prüfen (10 dB mehr Anregung → 10 dB mehr Anzeige).
 - [ ] 3.6 CPU-Last und Task-Timing messen, Sensor-Task auf eigenen Kern mit hoher Priorität.
 
@@ -58,7 +65,8 @@ erst wenn das erfüllt ist, geht es weiter.
 ## Phase 4 — Bedienoberfläche  (~2 Tage)
 
 - [ ] 4.1 Screen LIVE: große dB-Zahl, f0, Balkenspektrum 10-100 Hz.
-- [ ] 4.2 Screen PEAK/BURP: Max-Hold groß, f0 beim Maximum, Reset per langem Tastendruck.
+- [ ] 4.2 Screen PEAK/BURP: max. RMS groß, True-Peak als Nebenwert, f0 beim Maximum, Reset per langem Tastendruck.
+- [ ] 4.2a Bandumschaltung 10-100 / 5-150 Hz im Menü; Wechsel muss die Haltewerte zurücksetzen.
 - [ ] 4.3 Screen RTA: 1/6-Oktav-Balken mit Max-Hold, N=1024.
 - [ ] 4.4 Statuszeile: `dB SPL (Z, 10-100 Hz)`, fs, Temperatur, OVER-/Overrun-Warnung.
 - [ ] 4.5 Modusumschaltung per Taster/Touch, Einstellungen in NVS persistent.
@@ -121,7 +129,7 @@ erst wenn das erfüllt ist, geht es weiter.
 
 | | |
 |---|---|
-| Aktive Arbeitszeit | ca. 10-13 Tage, gut in Abendetappen machbar |
+| Aktive Arbeitszeit | ca. 10-13 Tage, gut in Abendetappen machbar (Phase 1 erledigt) |
 | Wartezeit Lieferung | 2-4 Wochen (parallel zu Phase 1) |
 | Materialkosten | 55-85 EUR |
 
