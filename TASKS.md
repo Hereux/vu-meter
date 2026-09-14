@@ -36,11 +36,11 @@ Drei Befunde, die in die Firmware einfließen:
 
 ## Phase 2 — Sensor-Bringup  (~1 Tag, nach Lieferung)
 
-- [ ] 2.1 ESP32-Board in PlatformIO einrichten, Display-Beispiel (TFT_eSPI) zum Laufen bringen.
+- [ ] 2.1 ESP32-Board in PlatformIO einrichten (`firmware/platformio.ini` steht), Display-Beispiel (TFT_eSPI) zum Laufen bringen.
 - [ ] 2.2 BMP581 per I²C anbinden, Chip-ID lesen, Absolutdruck plausibel (800-1100 hPa)?
 - [ ] 2.3 Continuous Mode, OSR 1x, IIR aus, FIFO aktivieren.
 - [ ] 2.4 FIFO-Burst-Read alle 40 ms, Overrun-Flag auswerten.
-- [ ] 2.5 **fs-Kalibrierung**: über 30 s Samples zählen, reale Abtastrate bestimmen und in NVS speichern.
+- [ ] 2.5 **fs-Kalibrierung**: über 30 s Samples zählen, reale Abtastrate bestimmen und in NVS speichern. Gerüst in `src/main.cpp`, TODOs markiert. Bei Overrun muss die Zählung neu starten, sonst kommt die Rate zu niedrig heraus.
 - [ ] 2.6 Rohdaten über USB-Seriell streamen und am PC mit `tools/verify_log.py` plotten.
 
 **Abnahme:** Lückenloser Datenstrom mit bekannter, stabiler Abtastrate (Schwankung < 0,5 %), keine FIFO-Overruns über 10 Minuten.
@@ -49,16 +49,20 @@ Drei Befunde, die in die Firmware einfließen:
 
 ## Phase 3 — Messkette auf dem ESP32  (~2 Tage)
 
-- [ ] 3.1 Python-Modell aus Phase 1 nach C++ portieren (`dsp.cpp`, `spectrum.cpp`). Reihenfolge beibehalten: FFT vor dem Bandfilter.
-- [ ] 3.2 PlatformIO-Native-Tests (`test/test_dsp.cpp`) gegen `reference_vectors.h` — C++ muss den goldenen Vektor und die stationären Sollwerte reproduzieren.
-- [ ] 3.3 ESP-DSP-FFT einbinden, N=512, Hann, Hop N/4.
-- [ ] 3.4 Sinc-Korrektur (pro Bin im Spektralpfad, über f0 im Detektorpfad) und Peak-Interpolation ergänzen, Peak-Suche ein Bin über die Bandgrenzen hinaus.
-- [ ] 3.4a Biquad-Auslegung zur Laufzeit aus der in Phase 2.5 gemessenen Abtastrate.
-- [ ] 3.4b Einschwingsperre (150 ms) für Peak- und Max-Hold nach Start, Reset und Bandwechsel.
-- [ ] 3.5 Erster Realtest: Sub mit Sinus 30 Hz ansteuern, Pegel schrittweise erhöhen, Linearität prüfen (10 dB mehr Anregung → 10 dB mehr Anzeige).
-- [ ] 3.6 CPU-Last und Task-Timing messen, Sensor-Task auf eigenen Kern mit hoher Priorität.
+Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein Board.
 
-**Abnahme:** Angezeigter Pegel folgt linear der Anregung, f0 stimmt mit dem Generator auf < 0,2 Hz überein.
+- [x] 3.1 Python-Modell nach C++ portiert (`firmware/src/dsp.*`, `spectrum.*`, `meter.*`). Frei von Arduino-Abhängigkeiten, damit derselbe Code im PC-Test läuft. FFT vor dem Bandfilter.
+- [x] 3.2 Abnahmetest gegen `reference_vectors.h`: **142 Tests grün**, goldener Vektor auf 0,007 Pa reproduziert. `make -C firmware test`, nur g++ nötig.
+- [x] 3.3 ~~ESP-DSP-FFT~~ **nicht nötig.** Eigene Radix-2-FFT mit vorberechneten Drehfaktoren. Bei N=1024 und Hop N/4 läuft sie 2,4-mal je Sekunde; gemessener Durchsatz 0,14 µs pro Sample, das sind unter 1 % Rechenzeit auf dem ESP32. Spart eine Abhängigkeit und macht den Code nativ testbar.
+- [x] 3.4 Sinc-Korrektur (pro Bin im Spektralpfad, über f0 im Detektorpfad) und Peak-Interpolation, Peak-Suche ein Bin über die Bandgrenzen hinaus.
+- [x] 3.4a Biquad-Auslegung zur Laufzeit aus der gemessenen Abtastrate.
+- [x] 3.4b Einschwingsperre (150 ms) für Peak- und Max-Hold nach Start, Reset und Bandwechsel.
+- [x] 3.4c **Neuer Befund:** obere Bandgrenze ≤ 0,4 × Abtastrate erzwungen. Genau auf Nyquist entartet der Tiefpass; ein unzulässiges Band wird jetzt abgelehnt statt still kaputt gebaut. Folge: BMP390 mit 200 Hz schafft höchstens 80 Hz obere Grenze.
+- [ ] 3.5 Erster Realtest: Sub mit Sinus 30 Hz ansteuern, Pegel schrittweise erhöhen, Linearität prüfen (10 dB mehr Anregung → 10 dB mehr Anzeige). **Braucht Hardware.**
+- [ ] 3.6 CPU-Last und Task-Timing auf dem Board bestätigen; Sensor-Task auf Kern 0 mit hoher Priorität, Anzeige auf Kern 1. Gerüst steht in `src/main.cpp`. **Braucht Hardware.**
+
+**Abnahme (PC-Teil) erfüllt:** 142 von 142 Tests bestanden. Begründung der Sprachwahl und Messwerte in [docs/07-warum-cpp.md](docs/07-warum-cpp.md).
+**Abnahme (Board-Teil) offen:** Angezeigter Pegel folgt linear der Anregung, f0 stimmt mit dem Generator auf < 0,2 Hz überein.
 
 ---
 

@@ -32,7 +32,12 @@ GOLDEN_SPL = 150.0
 
 
 def fmt(v):
-    return f"{v:.12g}f"
+    """C++-Float-Literal. %g liefert fuer ganze Zahlen '622', daraus wuerde
+    '622f' -- kein gueltiges Literal. Deshalb Dezimalpunkt erzwingen."""
+    t = f"{v:.12g}"
+    if not any(c in t for c in ".eE"):
+        t += ".0"
+    return t + "f"
 
 
 def main():

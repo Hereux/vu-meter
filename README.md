@@ -36,6 +36,8 @@ Mikrofonempfindlichkeit abzuhängen.
 | [docs/04-gehaeuse.md](docs/04-gehaeuse.md) | 3D-Druck, Material, Druckport, Entkopplung, Montage |
 | [docs/05-kalibrierung.md](docs/05-kalibrierung.md) | Gain-Prüfung per Wassersäule, Frequenzgang, Grenzen des Geräts |
 | [docs/06-phase1-ergebnisse.md](docs/06-phase1-ergebnisse.md) | Messergebnisse des DSP-Modells und die Befunde daraus |
+| [docs/07-warum-cpp.md](docs/07-warum-cpp.md) | Warum die Gerätesoftware C++ ist und Python die Referenz bleibt |
+| [firmware/README.md](firmware/README.md) | Aufbau der Firmware, Testen ohne Hardware |
 | **[TASKS.md](TASKS.md)** | **Abarbeitungsliste in 9 Phasen mit Abnahmekriterien** |
 
 ## Werkzeuge
@@ -49,14 +51,21 @@ python3 tools/export_reference.py  # Sollwerte fuer die C++-Portierung erzeugen
 
 Alles reine Standardbibliothek — kein numpy, kein scipy, keine Installation.
 
+```bash
+make -C firmware test   # 142 Abnahmetests der C++-Portierung, nur g++ noetig
+make -C firmware bench  # Durchsatzmessung
+```
+
 ## Status
 
-**Phase 1 abgeschlossen** — das DSP-Referenzmodell steht und ist mit 99
-Abnahmetests abgesichert: Pegelfehler ±0,03 dB und Frequenzfehler ±0,01 Hz über
-das gesamte Messband. Ergebnisse in
-[docs/06-phase1-ergebnisse.md](docs/06-phase1-ergebnisse.md).
+**Phase 1 abgeschlossen, Phase 3 vorgezogen, soweit ohne Hardware möglich.**
 
-Als Nächstes: Phase 0 (Bestellung, blockiert die Hardware-Phasen) und danach
+- DSP-Referenzmodell in Python: Pegelfehler ±0,03 dB, Frequenzfehler ±0,01 Hz
+  über das gesamte Messband, 99 Tests → [docs/06-phase1-ergebnisse.md](docs/06-phase1-ergebnisse.md)
+- C++-Portierung für den ESP32: 142 Tests gegen die Referenzwerte des Modells,
+  läuft ohne Board → [firmware/README.md](firmware/README.md)
+
+Als Nächstes: **Phase 0 (Bestellung)** — sie blockiert alles Weitere. Danach
 Phase 2 (Sensor-Bringup) aus [TASKS.md](TASKS.md).
 
 ## Hinweis

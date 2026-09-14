@@ -54,7 +54,7 @@ constexpr float kBand5_150_fs622_respDb[6] = {-3.01029995664f, -0.0168455168919f
 // fs = 622 Hz, Band 10-100, Sinus 40 Hz bei 150 dB SPL
 // auf 101325 Pa Luftdruck, mit nachgebildeter Sensormittelung.
 constexpr int kGoldenLen = 64;
-constexpr float kGoldenFs = 622f;
+constexpr float kGoldenFs = 622.0f;
 constexpr float kGoldenIn[kGoldenLen] = {
     101503.257403f, 101831.062445f, 102077.362129f, 102202.487942f,
     102186.287383f, 102031.369681f, 101762.685555f, 101423.50871f,
@@ -74,7 +74,7 @@ constexpr float kGoldenIn[kGoldenLen] = {
     100761.650366f, 101077.070686f, 101432.421982f, 101770.472119f,
 };
 constexpr float kGoldenOut[kGoldenLen] = {
-    0f, 6.63857432894f, 45.6878997277f, 145.260562607f,
+    0.0f, 6.63857432894f, 45.6878997277f, 145.260562607f,
     284.789061086f, 382.380925732f, 352.668737103f, 170.174218686f,
     -119.723461386f, -434.630307757f, -695.950905775f, -850.893982772f,
     -874.513149708f, -763.689357566f, -532.783277394f, -212.47431875f,
@@ -97,17 +97,17 @@ constexpr float kGoldenOut[kGoldenLen] = {
 struct ToneCase { float freq, splTone, splSlow, f0; };
 constexpr int kToneCaseLen = 7;
 constexpr ToneCase kToneCases[kToneCaseLen] = {
-    {10f, 149.965203253f, 146.967857779f, 10.0034054404f},
-    {20f, 149.975269669f, 149.940291922f, 19.9963928437f},
+    {10.0f, 149.965203253f, 146.967857779f, 10.0034054404f},
+    {20.0f, 149.975269669f, 149.940291922f, 19.9963928437f},
     {31.5f, 149.976704171f, 149.972952431f, 31.4934945432f},
-    {50f, 149.976552657f, 149.973592471f, 50.009622533f},
-    {63f, 149.976825432f, 149.911465101f, 62.9902891234f},
-    {80f, 149.976840519f, 149.450196468f, 79.9902800032f},
-    {100f, 149.976434447f, 146.964186838f, 99.9914568438f},
+    {50.0f, 149.976552657f, 149.973592471f, 50.009622533f},
+    {63.0f, 149.976825432f, 149.911465101f, 62.9902891234f},
+    {80.0f, 149.976840519f, 149.450196468f, 79.9902800032f},
+    {100.0f, 149.976434447f, 146.964186838f, 99.9914568438f},
 };
 
 constexpr float kTauFast = 0.125f;
-constexpr float kTauSlow = 1f;
+constexpr float kTauSlow = 1.0f;
 constexpr float kHoldGuardS = 0.15f;
 constexpr float kDcBlockerFc = 0.5f;
 
