@@ -1,153 +1,192 @@
-# 8. Einkaufsliste
+# 8. Einkaufsliste — AliExpress zuerst
 
-> **Zur Verlässlichkeit der Links:** Die Shop-Seiten selbst waren aus der
-> Arbeitsumgebung nicht abrufbar. Die Links stammen aus Suchergebnissen und
-> sind **nicht geöffnet worden** — Preise, Lagerbestand und
-> Artikelverfügbarkeit also bitte beim Bestellen selbst prüfen. Bei Reichelt
-> ist die **Artikelnummer** das Zuverlässige: die in die Suchmaske eintippen,
-> falls ein Link ins Leere läuft.
+> **Was geprüft ist und was nicht.** Die Shop-Seiten sind aus der
+> Arbeitsumgebung nicht abrufbar — das Gateway lehnt `aliexpress.com`,
+> `amazon.de` und `reichelt.de` mit HTTP 403 ab, das ist die Netzwerkrichtlinie
+> der Umgebung. Die Artikelnummern unten stammen aus **Suchtreffern**, die
+> Seiten selbst wurden **nicht geöffnet**. Preise, Lagerstand und die genaue
+> Produktidentität also vor dem Kauf am Bild prüfen — besonders bei Punkt 2,
+> dort gibt es eine teure Verwechslungsgefahr.
 >
-> Preisstand: Schätzung auf Basis der Suchergebnisse, Stand September 2026.
+> Die Artikelnummer ist bei AliExpress das Dauerhafte: wenn ein Link ins Leere
+> läuft, die Nummer in die Suche der App eintippen.
 
-## Korrektur zur bisherigen Kalkulation
+## Eine Bestellung, alles von AliExpress
 
-Der BMP581 ist in Deutschland teurer als in `02-hardware.md` angesetzt:
-**27–29 €** statt der geschätzten 8–19 €. Über AliExpress (DFRobot Fermion)
-bleibt es bei etwa 12–15 €, dafür mit 2–4 Wochen Lieferzeit. Das verschiebt die
-Gesamtsumme auf **55 € (AliExpress-Weg)** bis **95 € (deutscher Weg)** — beides
-noch im Budgetrahmen.
+| # | Teil | Artikelnummer | ca. |
+|---|---|---|---|
+| 1 | ESP32-2432S028R (CYD) | 1005004700627096 | 13 € |
+| 2 | BMP581 **Breakout-Platine** | 1005005030982017 | 15 € |
+| 3 | Step-Down 12 V → 5 V, **fest** | Suche, s.u. | 3 € |
+| 4 | KFZ-Sicherungshalter + Sicherungen | Suche | 2 € |
+| 5 | TVS-Dioden-Sortiment SMBJ/P6KE | Suche | 2 € |
+| 6 | JST-XH-Set + Litze 0,75 mm² | Suche | 4 € |
+| 7 | Gewindeeinsätze M3 (Set) | Suche | 4 € |
+| 8 | Saugnapfhalterung 30 mm, 2× | Suche | 3 € |
+| 9 | Mikrofon-Windschutz Schaumstoff | Suche | 2 € |
+| 10 | Moosgummi 2 mm selbstklebend | Suche | 3 € |
+| 11 | Silikonschlauch 6 mm klar + Spritze 60 ml | Suche | 4 € |
+| | **Summe AliExpress** | | **~55 €** |
+
+Dazu **Filament** (ASA oder PETG, ~25 € die Rolle) aus einem deutschen Shop —
+Versandkosten und Zoll machen eine Filamentrolle aus China unattraktiv, und du
+hast vermutlich ohnehin welches da.
 
 ---
 
-## A — Kernteile
+## 1. ESP32-2432S028R — Rechner und Display
 
-Diese beiden bestimmen das Gerät. Alles andere ist austauschbar.
+Mehrere bestätigte Listings, alle dasselbe Board:
 
-### 1. Rechner mit Display: ESP32-2432S028R ("Cheap Yellow Display")
+| Artikelnummer | Bezeichnung im Treffer |
+|---|---|
+| [1005004700627096](https://de.aliexpress.com/item/1005004700627096.html) | RCmall 2.8'' ESP32-2432S028R, 240×320, ILI9341 |
+| [1005004502250619](https://de.aliexpress.com/item/1005004502250619.html) | ESP32 LVGL WiFi/BT 2.8" Smart Display, im Treffer mit 9,39 US$ |
+| [1005004971720824](https://de.aliexpress.com/item/1005004971720824.html) | 2.8 Inch Display Screen ESP32 LVGL WiFi BT |
 
-2,8" TFT 320×240 (ILI9341), Touch, microSD, USB-UART — alles auf einem Board.
+**Vor dem Kaufen am Bild prüfen:** gelbe Platine, Typaufdruck
+`ESP32-2432S028R`, resistiver Touch (dünner Stift liegt oft bei), microSD-Slot
+an der Seite. Die Varianten `S032` und `S035` haben andere Displays und andere
+Pins als in `firmware/include/config.h` hinterlegt.
 
-| Bezug | Preis | Hinweis |
-|---|---|---|
-| [AliExpress-Suche](https://de.aliexpress.com/w/wholesale-ESP32-2432S028R.html) | 12–16 € | günstigster Weg, 2–4 Wochen |
-| [Amazon-Suche](https://www.amazon.de/s?k=ESP32-2432S028R) | 18–25 € | schnell, oft im Doppelpack |
-| [eBay-Listing](https://www.ebay.com/itm/186541372755) | ~14 $ | aus dem Suchergebnis, ungeprüft |
-
-**Auf die genaue Typbezeichnung achten:** `ESP32-2432S028R`. Die Varianten
-`S032`, `S035` oder `2432S028` ohne `R` haben andere Displays, andere Pins oder
-kapazitiven statt resistiven Touch. Die Pinbelegung in
-`firmware/include/config.h` gilt für die `R`-Variante — und auch da gibt es
-Revisionen, also vor dem Löten nachmessen.
-
-Referenz-Pinouts zum Gegenprüfen:
+Pinout zum Gegenprüfen nach Erhalt:
 [Random Nerd Tutorials](https://randomnerdtutorials.com/esp32-cheap-yellow-display-cyd-pinout-esp32-2432s028r/) ·
 [Mischianti](https://mischianti.org/esp32-2432s028-cheap-yellow-display-high-resolution-pinout-datasheet-schema-and-specs/)
 
-### 2. Messwandler: BMP581-Breakout
+---
 
-**Das ist das Herzstück.** Kein Ersatz durch BMP280, BME280 oder BMP180 — die
-schaffen die nötige Abtastrate nicht.
+## 2. BMP581 — hier ist die Falle
 
-| Bezug | Preis | Hinweis |
+**Die Hälfte der „BMP581"-Angebote sind nackte Chips im LGA-10-Gehäuse:
+2 × 2 × 0,5 mm, zehn Pads unter dem Bauteil.** Von Hand nicht lötbar, ohne
+Platine nutzlos. Die sind billig, und genau deshalb stehen sie oben in den
+Suchergebnissen.
+
+### Das willst du — Breakout-Platinen
+
+| Artikelnummer | Was | ca. |
 |---|---|---|
-| [Eckstein: SparkFun Pressure Sensor BMP581 (Qwiic)](https://eckstein-shop.de/SparkFun-Pressure-Sensor-BMP581-Qwiic-Compatible-with-Arduino-EN) | 27,31 € | DE-Versand, Lieferzeit dort mit 2–3 Wochen angegeben |
-| [Eckstein: SparkFun Micro BMP581 (Qwiic Micro)](https://eckstein-shop.de/SparkFun-Micro-Pressure-Sensor-BMP581-Qwiic-Compatible-with-Arduino-EN) | 28,50 € | kleinere Bauform, passt besser in die Sensorkammer |
-| [BerryBase: SparkFun Qwiic BMP581](https://www.berrybase.at/sparkfun-qwiic-bmp581) | ~28 € | Alternative |
-| [AliExpress: DFRobot Fermion BMP581](https://www.aliexpress.us/item/3256811635538614.html) | ~12–15 € | günstig, I2C/SPI/I3C, 3,3 V |
-| [Adafruit BMP581 STEMMA QT](https://www.adafruit.com/product/6407) | ~13 $ | über Distributor in DE |
-| [AliExpress-Suche BMP581](https://de.aliexpress.com/w/wholesale-BMP581.html) | ab ~10 € | Qualität schwankt, Chip-ID nach Erhalt prüfen |
+| [1005005030982017](https://de.aliexpress.com/item/1005005030982017.html) | SparkFun SEN-20170 Qwiic BMP581 (Nachbau o. Reseller) | ~15 € |
+| [1005011832116348](https://de.aliexpress.com/item/1005011832116348.html) | DFRobot Gravity BMP581, I2C/UART | ~14 € |
+| [1005011635538614](https://de.aliexpress.com/item/1005011635538614.html) | DFRobot Fermion BMP581, I2C/SPI/I3C, 3,3 V | ~12 € |
+| [1005010277584150](https://de.aliexpress.com/item/1005010277584150.html) | Adafruit-6407-Variante, STEMMA QT | ~13 € |
+| [1005010701836930](https://de.aliexpress.com/item/1005010701836930.html) | „BMP581 High Precision Barometric" — Titel lässt offen, ob Platine. **Bilder prüfen.** | ~10 € |
 
-**Empfehlung:** Eins über AliExpress **und** eins aus DE bestellen. 40 € für
-zwei Sensoren sind gut angelegt — der Zweitsensor ist die Plausibilitätsprüfung
-aus Phase 5.3, und wenn einer defekt ankommt, steht das Projekt nicht 4 Wochen.
+> Die letzten drei Nummern sind aus Treffern anderer AliExpress-Länderdomains
+> umgerechnet (dort `3256 8…`, hier `1005 0…` mit identischen letzten zehn
+> Ziffern). Das Muster stimmt normalerweise, überprüft habe ich es nicht.
 
-Beim Anschließen: **3,3 V, niemals 5 V.** Maximal 3,6 V laut Datenblatt.
+### Das willst du nicht — nackte Chips
 
----
+[1005008158262909](https://de.aliexpress.com/item/1005008158262909.html)
+(„BMP581 LGA-10 (2x2x0.5)") und
+[1005008147941143](https://de.aliexpress.com/item/1005008147941143.html)
+(„2PCS/LOT New original BMP581"). Erkennungsmerkmal im Bild: ein winziges
+schwarzes Quadrat, teils auf Klebeband oder im Gurt, **ohne Platine und ohne
+Stiftleiste**.
 
-## B — Stromversorgung und Bordnetzschutz (Reichelt)
+**Kaufempfehlung: zwei Stück, verschiedene Anbieter.** 28 € für zwei sind gut
+angelegt — der zweite ist die Plausibilitätsprüfung aus Phase 5.3, und wenn
+einer defekt oder als Chip statt Platine ankommt, steht das Projekt nicht noch
+einmal vier Wochen.
 
-Ein Showcar-Bordnetz ist rau. Diese Teile sind billig und verhindern, dass
-20 € Elektronik an einer Spannungsspitze sterben.
+**Anschluss: 3,3 V, niemals 5 V.** Laut Datenblatt maximal 3,6 V.
 
-| Teil | Artikelnr. | ca. | Zweck |
-|---|---|---|---|
-| [RECOM R-78B50-10](https://www.reichelt.de/de/de/shop/suche/R-78B50-10) — DC/DC 6,5–32 V → 5 V, 1 A, SIP-3 | **159150** | 7 € | Bordnetz auf 5 V. Wide-Input deckt Load-Dump-Spitzen ab |
-| [TVS SMCJ24A](https://www.reichelt.de/de/de/shop/suche/SMCJ24A) — unidirektional, 24 V, 1500 W | **290911** | 0,50 € | SMD. Wer lieber bedrahtet lötet: nach **P6KE24A** suchen |
-| [Schottky SS34](https://www.reichelt.de/de/de/shop/suche/SS34) o. 1N5822 | — | 0,30 € | Verpolschutz in Reihe, 0,4 V Verlust |
-| [KFZ-Flachsicherungshalter](https://www.reichelt.de/de/de/shop/suche/Sicherungshalter%20Flachsicherung) + 1-A-Sicherung | — | 3 € | direkt an der Einspeisung |
-| [Elko 470 µF / 35 V](https://www.reichelt.de/de/de/shop/suche/470u%2035V%20radial) | — | 0,40 € | Siebung vor dem Wandler |
-| [Elko 100 µF / 16 V](https://www.reichelt.de/de/de/shop/suche/100u%2016V%20radial) | — | 0,15 € | hinter dem Wandler |
-| [Ferritperle](https://www.reichelt.de/de/de/shop/suche/Ferritkern%20Drossel) | — | 0,30 € | gegen Endstufen-Ripple |
-| [Litze 2×0,75 mm²](https://www.reichelt.de/de/de/shop/suche/Fahrzeugleitung%200%2C75) | — | 3 € | Zuleitung |
-| [JST-XH-Set](https://www.reichelt.de/de/de/shop/suche/JST%20XH%20Steckverbinder) | — | 4 € | Steckverbindungen |
-
-**Summe B: ca. 19 €.** Bei Reichelt lohnt eine Sammelbestellung — Versand ~6 €.
-
-Alternativ bei **Pollin** ([Suche DC/DC-Wandler](https://www.pollin.de/search?query=DC%2FDC-Wandler%205V)):
-fertige 12→5-V-Module ab ~4 €. Billiger, aber ohne den weiten Eingangsbereich
-des Recom-Moduls — für ein Fahrzeug ist der R-78B50 die sicherere Wahl.
+Wenn du nicht warten willst oder auf Nummer sicher gehen möchtest, gibt es
+dasselbe in Deutschland ab Lager:
+[Eckstein](https://eckstein-shop.de/SparkFun-Pressure-Sensor-BMP581-Qwiic-Compatible-with-Arduino-EN)
+27,31 € · [BerryBase](https://www.berrybase.at/sparkfun-qwiic-bmp581) ~28 €.
 
 ---
 
-## C — Mechanik und Gehäuse
+## 3. Spannungsversorgung — zwei Regeln
 
-| Teil | Bezug | ca. |
-|---|---|---|
-| **ASA- oder PETG-Filament**, ~100 g | [Amazon ASA](https://www.amazon.de/s?k=ASA+Filament+1.75mm) · [Amazon PETG](https://www.amazon.de/s?k=PETG+Filament+1.75mm) | 3 € anteilig |
-| Gewindeeinsätze M3 zum Einschmelzen (Set) | [Amazon](https://www.amazon.de/s?k=Gewindeeinsatz+M3+Einschmelzen+Messing) | 9 € Set |
-| Schrauben M3×8 Zylinderkopf | [Reichelt](https://www.reichelt.de/de/de/shop/suche/Zylinderschraube%20M3x8) | 3 € |
-| Saugnapfhalterung 30 mm, 2 Stück | [Amazon](https://www.amazon.de/s?k=Saugnapf+Halterung+30mm+Scheibe) | 6 € |
-| Mikrofon-Windschutz Schaumstoff (für den Druckport) | [Amazon](https://www.amazon.de/s?k=Mikrofon+Windschutz+Schaumstoff) | 5 € |
-| Moosgummi 2 mm, selbstklebend (Sensorentkopplung) | [Amazon](https://www.amazon.de/s?k=Moosgummi+2mm+selbstklebend) | 6 € |
+[Suche: DC-DC 12V 24V auf 5V Step-Down](https://de.aliexpress.com/w/wholesale-dc--dc-12v-24v-to-5v-step-down-module.html)
 
-**Summe C: ca. 30 €**, davon vieles Restbestand für spätere Projekte.
+**Regel 1: feste 5 V, kein einstellbares Modul.** Module mit Trimmpoti sind
+billiger und überall zu haben — aber ein Poti in einem Fahrzeug, das von einem
+1000-W-Sub durchgeschüttelt wird, kann sich verstellen. Dann liegen 12 V am
+ESP32 an und das Board ist hin. Wenn es doch ein einstellbares wird: nach dem
+Einstellen einen Tropfen Nagellack oder Sicherungslack aufs Poti.
 
----
+**Regel 2: Eingangsbereich bis mindestens 40 V.** Load-Dump-Spitzen im Bordnetz
+gehen weit über 14 V hinaus. Module mit „bis 28 V" sind zu knapp.
 
-## D — Kalibrierhilfsmittel (Phase 5)
+Zum XL4015, der oft empfohlen wird: in den Suchergebnissen finden sich
+[Hinweise auf Fälschungen](https://de.aliexpress.com/w/wholesale-xl4015.html),
+bei denen ein LM2596 unter dem Aufdruck sitzt und das Modul schon bei kleiner
+Last heiß wird. Deshalb lieber ein fertiges KFZ-Modul mit festem 5-V-Ausgang.
 
-Für 5 € wird die Gain-Prüfung bis 168 dB möglich — ohne Referenzgerät.
+**Wenn du Gewissheit willst**, ist das der eine Punkt, an dem sich eine
+Reichelt-Position lohnt: **RECOM R-78B50-10**, Artikelnummer **159150**, ~7 €.
+6,5–32 V Eingang, feste 5 V, 1 A, drei Pins. Damit ist die Versorgung erledigt.
 
-| Teil | Bezug | ca. |
-|---|---|---|
-| Klarer Silikonschlauch 6 mm, 1 m | [Amazon](https://www.amazon.de/s?k=Silikonschlauch+6mm+transparent) | 5 € |
-| Einwegspritze 60 ml (für das Pistonphon) | Apotheke / [Amazon](https://www.amazon.de/s?k=Einwegspritze+60ml) | 3 € |
-| Stahllineal 300 mm | vorhanden oder 5 € | — |
+**Dazu unbedingt, egal woher:**
 
----
-
-## Zwei Bestellwege
-
-### Schnell (5–7 Tage, ~95 €)
-
-| | |
+| Teil | AliExpress-Suche |
 |---|---|
-| Amazon | CYD-Board, Filament, Kleinteile, Mechanik |
-| Eckstein oder BerryBase | BMP581 |
-| Reichelt | Bordnetzteile in einer Sammelbestellung |
+| KFZ-Flachsicherungshalter + 1-A-Sicherungen | [Suche](https://de.aliexpress.com/w/wholesale-inline-blade-fuse-holder-car.html) |
+| TVS-Dioden-Sortiment (SMBJ oder P6KE, 24 V) | [Suche](https://de.aliexpress.com/w/wholesale-p6ke-tvs-diode-kit.html) |
+| Schottky-Dioden SS34 / 1N5822 (Verpolschutz) | [Suche](https://de.aliexpress.com/w/wholesale-ss34-schottky-diode.html) |
+| Elkos 470 µF/35 V und 100 µF/16 V | [Suche](https://de.aliexpress.com/w/wholesale-electrolytic-capacitor-kit.html) |
 
-### Günstig (3–5 Wochen, ~55 €)
-
-| | |
-|---|---|
-| AliExpress | CYD-Board, BMP581 (Fermion), DC/DC-Modul, Kleinteile |
-| Reichelt | nur Sicherungshalter, TVS und Litze |
-
-**Praktischer Vorschlag:** AliExpress für CYD und einen BMP581 sofort
-losschicken, parallel die Reichelt-Bestellung aufgeben. Während der Lieferzeit
-läuft Phase 1 und 3 ohnehin schon am PC — die sind fertig. Wenn du nicht warten
-willst, den zweiten BMP581 bei Eckstein dazunehmen.
+Sicherung direkt an die Einspeisung, Schottky in Reihe, TVS parallel.
+Masse sternförmig an **einem** Punkt, nicht an der Endstufenmasse — sonst
+koppelt deren Ripple ein.
 
 ---
 
-## Was nicht kaufen
+## 4. Mechanik
+
+| Teil | Suche |
+|---|---|
+| Gewindeeinsätze M3 zum Einschmelzen | [Suche](https://de.aliexpress.com/w/wholesale-m3-heat-set-insert-brass.html) |
+| Schrauben M3×8 Zylinderkopf | [Suche](https://de.aliexpress.com/w/wholesale-m3-socket-head-screw-kit.html) |
+| Saugnapfhalterung 30 mm | [Suche](https://de.aliexpress.com/w/wholesale-suction-cup-mount-car-windshield.html) |
+| Mikrofon-Windschutz Schaumstoff | [Suche](https://de.aliexpress.com/w/wholesale-microphone-foam-windscreen.html) |
+| Moosgummi 2 mm selbstklebend | [Suche](https://de.aliexpress.com/w/wholesale-self-adhesive-foam-rubber-sheet-2mm.html) |
+
+**Filament aus Deutschland**, ASA oder PETG. Kein PLA — hinter der Scheibe
+werden im Sommer 60–80 °C erreicht, PLA verformt sich ab 55 °C.
+
+---
+
+## 5. Kalibrierhilfsmittel
+
+| Teil | Suche | Zweck |
+|---|---|---|
+| Silikonschlauch 6 mm klar, 1 m | [Suche](https://de.aliexpress.com/w/wholesale-clear-silicone-tube-6mm.html) | U-Rohr-Manometer |
+| Einwegspritze 60 ml | [Suche](https://de.aliexpress.com/w/wholesale-60ml-syringe.html) | DIY-Pistonphon |
+
+Damit wird die Gain-Prüfung bis 168 dB möglich — ohne Referenzgerät.
+10 cm Wassersäule sind exakt 980 Pa, also 153,8 dB. Details in
+[05-kalibrierung.md](05-kalibrierung.md).
+
+---
+
+## Was du bewusst nicht kaufst
 
 | Falle | Warum |
 |---|---|
-| **BMP280 / BME280 / BMP180** | Viel zu langsam. Der Messbereich bis 100 Hz braucht ≥ 400 Hz Abtastrate, diese Sensoren schaffen einen Bruchteil davon. |
-| **BMP390 als Ersatz** | 200 Hz Abtastrate. Die Firmware lehnt damit beide Messbänder ab: obere Bandgrenze darf höchstens 0,4 × Abtastrate sein, also 80 Hz. Nur als Zweitsensor für den Quervergleich sinnvoll. |
-| **PLA-Filament** | Verformt sich ab ~55 °C. Hinter der Scheibe werden im Sommer 60–80 °C erreicht. |
-| **Messmikrofon jeder Art** | Clippt ab ~130 dB und ist unter 20 Hz taub. Begründung in [01-messprinzip.md](01-messprinzip.md). |
-| **Gore-Tex- oder Gewebemembran vor dem Druckport** | Strömungswiderstand verfälscht genau die tiefen Frequenzen. Nur offenporiger Schaumstoff. |
-| **CYD-Varianten S032 / S035** | Andere Displays und Pins als in `config.h` hinterlegt. |
+| **BMP581 als nackter LGA-10-Chip** | 2 × 2 mm, Pads unter dem Bauteil. Von Hand nicht lötbar. |
+| **BMP280 / BME280 / BMP180** | Viel zu langsam. 100 Hz Messbereich braucht ≥ 400 Hz Abtastrate. |
+| **BMP390 als Ersatz** | 200 Hz. Die Firmware lehnt damit beide Messbänder ab — obere Grenze darf höchstens 0,4 × Abtastrate sein, also 80 Hz. Nur als Zweitsensor zum Quervergleich. |
+| **Einstellbares Netzteilmodul im Auto** | Trimmpoti kann sich durch Vibration verstellen, dann liegen 12 V am ESP32. |
+| **Netzteilmodul mit nur 28 V Eingang** | Zu knapp für Load-Dump-Spitzen. |
+| **PLA-Filament** | Verformt sich ab 55 °C. |
+| **Messmikrofon jeder Art** | Clippt ab ~130 dB, unter 20 Hz taub. Begründung in [01-messprinzip.md](01-messprinzip.md). |
+| **Gore-Tex oder Gewebe vor dem Druckport** | Strömungswiderstand frisst genau die tiefen Frequenzen. Nur offenporiger Schaumstoff. |
+| **CYD-Varianten S032 / S035** | Andere Displays und Pins als in `config.h`. |
+
+---
+
+## Reihenfolge
+
+1. AliExpress-Bestellung raus — **CYD + zwei BMP581-Breakouts** sind der
+   kritische Pfad, 2–4 Wochen.
+2. Filament besorgen, falls nicht vorrätig.
+3. Optional Reichelt-Position R-78B50-10 (Art. 159150), wenn du beim Netzteil
+   kein Risiko willst.
+
+Warten kostet keinen Fortschritt: Phase 1 und der PC-Teil von Phase 3 sind
+fertig, die 142 Tests laufen ohne Hardware.

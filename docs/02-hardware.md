@@ -22,8 +22,8 @@
 | # | Teil | Zweck | Preis (EUR) | Quelle |
 |---|---|---|---|---|
 | 1 | ESP32-2432S028R, 2.8" TFT + microSD + Touch | MCU + Display + Logging in einem | 12-16 | AliExpress, Amazon |
-| 2 | BMP581 Breakout (SparkFun Qwiic / DFRobot Fermion / generisch) | Messwandler | 12-29 | AliExpress ~12-15, Eckstein/BerryBase ~27-29 |
-| 3 | DC/DC-Wandler 12 V -> 5 V (RECOM R-78B50-10, 6,5-32 V Eingang) | Bordnetzversorgung | 7 | Reichelt Art. 159150 |
+| 2 | BMP581 **Breakout-Platine** (SparkFun Qwiic / DFRobot / generisch) | Messwandler | 12-29 | AliExpress ~12-15, Eckstein/BerryBase ~27-29. **Kein nackter LGA-10-Chip** |
+| 3 | DC/DC 12 V -> 5 V, **fester** Ausgang, Eingang bis >= 40 V | Bordnetzversorgung | 3-7 | AliExpress ~3, oder RECOM R-78B50-10 (Reichelt Art. 159150) ~7 |
 | 4 | TVS SMBJ24A, Schottky SS34, Sicherungshalter + 1 A Flachsicherung | Load-Dump-/Verpolschutz | 3-5 | Reichelt |
 | 5 | Elkos 470 µF/35 V + 100 µF/10 V, Ferritperle | Siebung, Störunterdrückung | 2 | Reichelt |
 | 6 | Kabel 2×0,75 mm², JST-XH-Steckverbinder, Schrumpfschlauch | Verkabelung | 4 | — |
