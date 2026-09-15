@@ -135,14 +135,26 @@ Reichlich Reserve. Sensor-Task mit hoher Priorität und eigenem Kern, damit der
 Display-Refresh keine FIFO-Overruns verursacht (FIFO fasst nur 32 Werte ≈ 55 ms
 bei 580 Hz — deshalb mindestens alle 40 ms auslesen).
 
+## Absolutdruck-Ausgang
+
+Der Report enthält neben den Pegelwerten den geglätteten **Absolutdruck vor dem
+DC-Blocker** (`rawPressurePa`, Zeitkonstante 2 s) und ein Plausibilitätsflag.
+
+Der Wert ist nicht für die normale Anzeige gedacht, sondern für die statische
+Gain-Prüfung aus [05-kalibrierung.md](05-kalibrierung.md): dort wird der Sensor
+in eine dichte Kammer gesetzt und mit einem bekannten Überdruck beaufschlagt.
+Der DC-Blocker entfernt genau diese Größe — ohne separaten Ausgang wäre die
+Kalibrierung also gar nicht durchführbar.
+
 ## Plausibilitätsprüfungen in der Firmware
 
 - **FIFO-Overrun-Flag** auswerten → Messung als ungültig markieren, nicht still
   weiterrechnen.
 - **Clipping-Erkennung**: Rohdruck außerhalb 350-1200 hPa → „OVER" anzeigen.
 - **Temperatur** mitloggen; der BMP581 liefert sie ohnehin.
-- **Sanity-Check beim Start**: Absolutdruck muss 800-1100 hPa sein, sonst
-  Sensorfehler.
+- **Sanity-Check beim Start**: `pressurePlausible` prüft 350-1200 hPa. Außerhalb
+  stimmt etwas nicht — Sensor defekt, falsch verdrahtet, oder der Pegel sprengt
+  den Messbereich.
 
 ## Struktur des Repos (geplant)
 

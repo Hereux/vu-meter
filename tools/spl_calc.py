@@ -77,9 +77,19 @@ def main() -> None:
               f"Update {p['update_s']:.2f} s")
 
     print("\n== Statische Kalibrierung per Wassersaeule ==")
+    g = 9.80665
+    rho20 = 998.21  # Wasser bei 20 C
+    print("Sollwerte bei 20 C, dazu der Fehler durch +/-1 mm Ableseungenauigkeit")
+    print(f"{'dh [cm]':>8} {'p [Pa]':>9} {'aequiv. dB':>11} {'Ablesefehler':>13}")
     for cm in (5, 10, 20, 50):
-        pa = 999.0 * 9.81 * cm / 100  # Wasser bei 15 C
-        print(f"{cm:>3} cm H2O = {pa:7.1f} Pa = {pa_to_spl(pa):.1f} dB SPL (statisch, als Gain-Test)")
+        pa = rho20 * g * cm / 100
+        err = 0.1 / cm * 100  # 1 mm auf dh, in Prozent
+        print(f"{cm:>8} {pa:>9.1f} {pa_to_spl(pa):>11.1f} {err:>12.1f} %")
+    rho15, rho25 = 999.10, 997.05
+    print(f"Dichteaenderung 15 -> 25 C: {(rho15-rho25)/rho20*100:.2f} % "
+          f"-> bei 50 cm gleichauf mit dem Ablesefehler, zusammen ~0,3 %")
+    print(f"Sofort-Check ohne Aufbau: Luftdruck faellt um "
+          f"{1.225*g:.1f} Pa je Meter Hoehe (3 Stockwerke ~ 10 m ~ 120 Pa)")
 
 
 if __name__ == "__main__":

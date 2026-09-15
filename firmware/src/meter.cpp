@@ -1,5 +1,7 @@
 #include "meter.h"
 
+#include <cmath>
+
 namespace vu {
 
 namespace {
@@ -26,6 +28,9 @@ bool Meter::init(float fs, Band band, int nFft) {
   filt_.design(bl.lo, bl.hi, fs);
   fast_.init(fs, kTauFast);
   slow_.init(fs, kTauSlow);
+  rawAlpha_ = 1.0f - std::exp(-1.0f / (fs * kRawTau));
+  rawAvg_ = 0.0f;
+  rawPrimed_ = false;
   writeIdx_ = filled_ = hop_ = 0;
   specReady_ = false;
   f0_ = tonePa_ = bandPa_ = 0.0f;
@@ -52,6 +57,15 @@ float Meter::process(float pRaw) {
   // Die FFT bekommt das Signal VOR dem Bandfilter, nur DC-befreit. Sonst erbt
   // die Frequenzanzeige die -3 dB der Filterflanke und ein Ton genau auf einer
   // Bandgrenze wuerde 3 dB zu niedrig angezeigt.
+  // Erster Wert setzt den Arbeitspunkt, sonst kriecht der Mittelwert nach dem
+  // Einschalten minutenlang von 0 auf 101325 Pa hoch.
+  if (!rawPrimed_) {
+    rawAvg_ = pRaw;
+    rawPrimed_ = true;
+  } else {
+    rawAvg_ += rawAlpha_ * (pRaw - rawAvg_);
+  }
+
   const float d = dc_.process(pRaw);
   const float x = filt_.process(d);
 
@@ -99,6 +113,11 @@ Report Meter::report() const {
   r.f0 = f0_;
   r.splTone = splFromPa(tonePa_);
   r.splBandFft = splFromPa(bandPa_);
+  r.rawPressurePa = rawAvg_;
+  // Plausibilitaetsgrenzen des BMP581 mit Reserve. Ausserhalb stimmt etwas
+  // nicht: Sensor defekt, falsch angeschlossen, oder der Pegel sprengt den
+  // Messbereich.
+  r.pressurePlausible = rawAvg_ > 35000.0f && rawAvg_ < 120000.0f;
   return r;
 }
 

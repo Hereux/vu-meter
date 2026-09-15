@@ -262,6 +262,38 @@ void testRobustness() {
   }
 }
 
+void testRawPressure() {
+  std::printf("\nAbsolutdruck-Ausgang fuer die statische Kalibrierung\n");
+  const float fs = ref::kGoldenFs;
+  char name[96];
+  // Sensor in der Kammer: Grunddruck plus Ueberdruck aus der Wassersaeule.
+  // 10 cm H2O = 979 Pa, 50 cm = 4896 Pa (Wasser bei 20 Grad).
+  const float cases[][2] = {{101325.0f, 0.0f}, {101325.0f, 979.0f},
+                            {101325.0f, 4896.0f}, {97000.0f, 1958.0f}};
+  for (const auto& c : cases) {
+    vu::Meter m;
+    m.init(fs, vu::Band::k10to100, 512);
+    // 20 s einschwingen lassen (tau = 2 s), mit ueberlagertem Stoergeraeusch,
+    // damit der Mittelwert das auch wirklich wegmittelt.
+    const int n = static_cast<int>(fs * 20.0f);
+    for (int i = 0; i < n; ++i) {
+      const float t = static_cast<float>(i) / fs;
+      const float noise = 50.0f * std::sin(2.0f * static_cast<float>(M_PI) * 37.0f * t);
+      m.process(c[0] + c[1] + noise);
+    }
+    const vu::Report r = m.report();
+    std::snprintf(name, sizeof(name), "%.0f Pa + %.0f Pa Ueberdruck", c[0], c[1]);
+    checkNear(r.rawPressurePa, c[0] + c[1], 1.0f, name);
+    check(r.pressurePlausible, "als plausibel erkannt");
+  }
+  // Ausserhalb der Sensorgrenzen muss es auffallen.
+  vu::Meter bad;
+  bad.init(fs, vu::Band::k10to100, 512);
+  for (int i = 0; i < static_cast<int>(fs * 20.0f); ++i) bad.process(5000.0f);
+  check(!bad.report().pressurePlausible,
+        "unplausibler Rohdruck wird gemeldet (Sensor defekt o. falsch verdrahtet)");
+}
+
 void testFftSanity() {
   std::printf("\nFFT-Grundpruefungen\n");
   vu::Spectrum sp;
@@ -296,6 +328,7 @@ int main() {
   testLinearity();
   testBandSwitching();
   testRobustness();
+  testRawPressure();
   testFftSanity();
   std::printf("\n%d von %d Tests bestanden\n", g_total - g_failed, g_total);
   return g_failed == 0 ? 0 : 1;

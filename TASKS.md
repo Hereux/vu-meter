@@ -73,6 +73,7 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 - [ ] 4.2a Bandumschaltung 10-100 / 5-150 Hz im Menü; Wechsel muss die Haltewerte zurücksetzen.
 - [ ] 4.3 Screen RTA: 1/6-Oktav-Balken mit Max-Hold, N=1024.
 - [ ] 4.4 Statuszeile: `dB SPL (Z, 10-100 Hz)`, fs, Temperatur, OVER-/Overrun-Warnung.
+- [ ] 4.4a Debug-/Kalibrierscreen: zeigt `rawPressurePa` (Absolutdruck vor dem DC-Blocker) und die Sensortemperatur. Ohne den ist der Wassersäulen-Test aus Phase 5.1 nicht durchführbar.
 - [ ] 4.5 Modusumschaltung per Taster/Touch, Einstellungen in NVS persistent.
 - [ ] 4.6 Ablesbarkeit prüfen: aus 1,5 m Entfernung bei Tageslicht lesbar? Sonst Schriftgröße/Kontrast anpassen.
 
@@ -82,7 +83,8 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 
 ## Phase 5 — Kalibrierung und Verifikation  (~1 Tag)
 
-- [ ] 5.1 Wassersäulen-Test (`docs/05-kalibrierung.md` A): 5/10/20 cm, Abweichung < 1 %.
+- [ ] 5.0 Sofort-Check vor allem anderen: Gerät 10 m höher tragen, Rohdruck muss um ~120 Pa fallen. Deckt grobe Skalierungsfehler in zwei Minuten auf.
+- [ ] 5.1 Wassersäulen-Test (`docs/05-kalibrierung.md` A): dichte Sensorkammer bauen, Reihe über 10/20/50 cm, Hauptmesspunkt 50 cm. Abweichung < 1 %.
 - [ ] 5.2 Rauschteppich im ruhigen Raum messen und dokumentieren.
 - [ ] 5.3 Frequenzgang mit DIY-Pistonphon oder Zweitsensor-Vergleich (10-100 Hz, ±0,5 dB erwartet).
 - [ ] 5.4 Clipping-Grenze nachrechnen und Warnschwelle in der Firmware setzen (175 dB).

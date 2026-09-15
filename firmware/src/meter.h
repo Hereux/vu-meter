@@ -36,6 +36,8 @@ struct Report {
   float f0 = 0.0f;          // dominante Frequenz
   float splTone = 0.0f;     // Pegel dieses Tons, aus dem Spektrum
   float splBandFft = 0.0f;  // Bandpegel aus dem Spektrum (Parseval)
+  float rawPressurePa = 0.0f;  // geglaetteter Absolutdruck, fuer Kalibrierung
+  bool pressurePlausible = true;  // Rohdruck innerhalb der Sensorgrenzen
 };
 
 class Meter {
@@ -55,6 +57,18 @@ class Meter {
   void resetHold();
 
   Report report() const;
+
+  // Geglaetteter Absolutdruck in Pa, also VOR dem DC-Blocker.
+  //
+  // Dies ist der Messwert fuer die statische Gain-Pruefung aus
+  // docs/05-kalibrierung.md: Sensor in eine dichte Kammer, Kammer ueber ein
+  // Wassersaeulen-Manometer mit bekanntem Ueberdruck beaufschlagen, und dieser
+  // Wert muss um rho*g*h steigen. Ohne diesen Ausgang waere die Kalibrierung
+  // nicht durchfuehrbar -- der DC-Blocker entfernt genau die Groesse, um die
+  // es dabei geht.
+  //
+  // Zeitkonstante 2 s: bei der Kalibrierung zaehlt Ruhe, nicht Schnelligkeit.
+  float rawPressurePa() const { return rawAvg_; }
 
   // Sinc-Korrektur fuer den Zeitbereichspfad, gebildet mit der dominanten
   // Frequenz. Bei Bassmessungen dominiert praktisch immer ein Ton; bei
@@ -77,6 +91,11 @@ class Meter {
   Spectrum spectrum_;
 
   int guard_ = 0;  // verbleibende Samples der Einschwingsperre
+
+  static constexpr float kRawTau = 2.0f;  // s, Glaettung des Absolutdrucks
+  float rawAlpha_ = 0.0f;
+  float rawAvg_ = 0.0f;
+  bool rawPrimed_ = false;
 
   float ring_[kMaxFft];
   float block_[kMaxFft];
