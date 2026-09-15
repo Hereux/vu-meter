@@ -39,6 +39,7 @@ Mikrofonempfindlichkeit abzuhängen.
 | [docs/07-warum-cpp.md](docs/07-warum-cpp.md) | Warum die Gerätesoftware C++ ist und Python die Referenz bleibt |
 | [docs/08-einkaufsliste.md](docs/08-einkaufsliste.md) | Bezugsquellen, Artikelnummern, zwei Bestellwege |
 | [firmware/README.md](firmware/README.md) | Aufbau der Firmware, Testen ohne Hardware |
+| [case/README.md](case/README.md) | Gehäusemodell, Messliste, Druckeinstellungen |
 | **[TASKS.md](TASKS.md)** | **Abarbeitungsliste in 9 Phasen mit Abnahmekriterien** |
 
 ## Werkzeuge
@@ -63,8 +64,10 @@ make -C firmware bench  # Durchsatzmessung
 
 - DSP-Referenzmodell in Python: Pegelfehler ±0,03 dB, Frequenzfehler ±0,01 Hz
   über das gesamte Messband, 99 Tests → [docs/06-phase1-ergebnisse.md](docs/06-phase1-ergebnisse.md)
-- C++-Portierung für den ESP32: 142 Tests gegen die Referenzwerte des Modells,
+- C++-Portierung für den ESP32: 151 Tests gegen die Referenzwerte des Modells,
   läuft ohne Board → [firmware/README.md](firmware/README.md)
+- Parametrisches Gehäusemodell mit Passungslehre und 1:1-Papiervorlage
+  → [case/README.md](case/README.md)
 
 Als Nächstes: **Phase 0 (Bestellung)** — sie blockiert alles Weitere. Danach
 Phase 2 (Sensor-Bringup) aus [TASKS.md](TASKS.md).

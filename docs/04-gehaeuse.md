@@ -65,5 +65,26 @@ MEMS-Sensor misst diese Beschleunigung als Scheindruck mit.
 
 ## Dateien
 
-CAD als parametrisches OpenSCAD-Modell unter `case/`, damit Display- und
-Sensorvariante ohne Neuzeichnen anpassbar sind. Export als STL nach `case/stl/`.
+Das Modell liegt fertig unter [`case/`](../case/README.md):
+
+| Datei | Was |
+|---|---|
+| `case/params.scad` | **alle Maße an einer Stelle** — die einzige Datei, die anzufassen ist |
+| `case/case.scad` | Rückschale und Frontblende |
+| `case/sensor_chamber.scad` | Kalibrierkammer (dicht!) |
+| `case/fit_test.scad` | Passungslehre, 15 min Druckzeit |
+| `case/drawing.scad` | 1:1-Papiervorlage als SVG |
+| `case/stl/` | fertige STLs, alle als manifold geprüft |
+| `case/img/` | Vorschaubilder und Papiervorlage |
+
+```bash
+make -C case drawing   # Papiervorlage, bei 100 % ausdrucken
+make -C case fit       # Passungslehre
+make -C case           # alle STLs
+make -C case img       # Vorschaubilder
+```
+
+**Die Maße in `params.scad` sind nicht verifiziert.** Die Angaben zum
+ESP32-2432S028R widersprechen sich im Netz, und die genannte Displayfläche
+passt rechnerisch nicht zu 2,8". Vor dem Druck nachmessen — die Messliste steht
+in [`case/README.md`](../case/README.md).

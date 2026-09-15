@@ -94,10 +94,11 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 
 ---
 
-## Phase 6 — Gehäuse  (~2-3 Tage inkl. Druckzeit)
+## Phase 6 — Gehäuse  (~2-3 Tage inkl. Druckzeit) — Modell fertig, Rest braucht Hardware
 
-- [ ] 6.1 OpenSCAD-Modell nach `docs/04-gehaeuse.md` erstellen (`case/`).
-- [ ] 6.2 Testdruck nur der Sensorkammer, Passung des Sensorports prüfen.
+- [x] 6.1 OpenSCAD-Modell erstellt (`case/`): Rückschale mit belüfteter Sensorkammer, Frontblende, Kalibrierkammer, Passungslehre, 1:1-Papiervorlage. Alle STLs als manifold geprüft.
+- [ ] 6.1a **Platine vermessen** und die `MESSEN`-Werte in `case/params.scad` eintragen. Die Startwerte sind geraten — die Netzangaben zum Board widersprechen sich.
+- [ ] 6.2 Papiervorlage bei 100 % ausdrucken, Platine drauflegen. Dann Passungslehre drucken (`make -C case fit`, ~15 min), erst danach das Gehäuse (~6 h).
 - [ ] 6.3 Vollständiger Druck in ASA/PETG, Gewindeeinsätze einschmelzen.
 - [ ] 6.4 Montage, Sensor auf Moosgummi entkoppeln, Schaumstoff über den Port.
 - [ ] 6.5 **Frequenzgang nach dem Einbau erneut messen** (Phase 5.3 wiederholen) — das Gehäuse ist der wahrscheinlichste Fehlerort.
