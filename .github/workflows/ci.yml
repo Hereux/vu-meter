@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Die Jobs bauen und testen nur. Schreibrechte braucht keiner davon.
+permissions:
+  contents: read
+
 jobs:
   # Das Referenzmodell ist die Wahrheit, gegen die alles andere geprueft wird.
   # Laeuft ohne jede Abhaengigkeit.
