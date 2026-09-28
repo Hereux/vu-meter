@@ -10,6 +10,11 @@ on:
 permissions:
   contents: read
 
+# Bei mehreren Pushes hintereinander nur den letzten Lauf zu Ende fuehren.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Das Referenzmodell ist die Wahrheit, gegen die alles andere geprueft wird.
   # Laeuft ohne jede Abhaengigkeit.
@@ -52,6 +57,36 @@ jobs:
         run: make -C firmware test
       - name: Durchsatzmessung
         run: make -C firmware bench
+
+  # Prueft die PlatformIO-Testanbindung. Die Messkette selbst ist schon durch
+  # dsp-tests abgedeckt; hier geht es um test/test_custom_runner.py, der die
+  # Ausgabe der Suite in PlatformIO-Testfaelle uebersetzt. Ohne diesen Job
+  # waere er ausgeliefert, aber nie ausgefuehrt.
+  pio-native:
+    name: Messkette (PlatformIO)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: PlatformIO-Pakete zwischenspeichern
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio/.cache
+            ~/.platformio/packages
+            ~/.platformio/platforms
+          key: pio-native-${{ runner.os }}-${{ hashFiles('firmware/platformio.ini') }}
+          restore-keys: pio-native-${{ runner.os }}-
+
+      - name: PlatformIO installieren
+        run: pip install --upgrade platformio
+
+      - name: Tests
+        run: pio test -e native
+        working-directory: firmware
 
   # Baut die Firmware fuer das Board. Das ist der Teil, der sich ohne
   # ESP32-Toolchain nicht lokal pruefen laesst.
