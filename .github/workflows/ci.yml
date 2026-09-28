@@ -2,7 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # Auch Arbeitszweige bauen, nicht nur main. Sonst laeuft nichts, solange
+    # kein Pull Request offen ist -- und genau dann braucht man das Ergebnis,
+    # weil sich die ESP32-Firmware ohne Toolchain nirgends sonst uebersetzen
+    # laesst.
+    branches:
+      - main
+      - 'claude/**'
   pull_request:
   workflow_dispatch:
 
