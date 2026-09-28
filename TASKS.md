@@ -38,7 +38,8 @@ Drei Befunde, die in die Firmware einfließen:
 
 - [x] 2.0 CI baut die ESP32-Firmware (`.github/workflows/ci.yml`) und legt die Binärdateien als Artefakt ab. Bis dahin war `main.cpp` nie übersetzt worden — meine Arbeitsumgebung sperrt die PlatformIO-Registry. **Erster Lauf grün**, alle fünf Jobs: RAM 15,0 %, Flash 25,4 %, Bauzeit 48 s.
 - [x] 2.0a Demobetrieb ohne Sensor: synthetischer Sweep durch die echte Messkette, Anzeige auf dem TFT. Prüfbar mit dem Board allein.
-- [ ] 2.1 Firmware flashen (`pio run -e esp32 -t upload --upload-port COM13`), Display prüfen: 150,0 dB konstant, Frequenz wandert 20 → 80 Hz in 12 s. Bei dunklem Display die serielle Ausgabe prüfen — dann stimmt nur die TFT-Konfiguration nicht.
+- [x] 2.1 Firmware geflasht, Anzeige läuft. **Befund:** Bild korrekt, Beleuchtung aus — I²C lag auf GPIO 21, dem Backlight-Pin. Behoben: I²C auf 27/22, Beleuchtung per PWM regelbar, zwei `static_assert` gegen eine Wiederholung.
+- [ ] 2.1a Nachprüfen: Beleuchtung an, Helligkeit in der Statuszeile, Pegel weiterhin 150,0 dB und Sweep 20 → 80 Hz.
 - [ ] 2.2 BMP581 per I²C anbinden, Chip-ID lesen, Absolutdruck plausibel (800-1100 hPa)?
 - [ ] 2.3 Continuous Mode, OSR 1x, IIR aus, FIFO aktivieren.
 - [ ] 2.4 FIFO-Burst-Read alle 40 ms, Overrun-Flag auswerten.

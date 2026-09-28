@@ -41,6 +41,17 @@ Vorher die TFT-Flags in `platformio.ini` und die Pinbelegung in
 `include/config.h` gegen die eigene Boardrevision prüfen — von den CYD-Boards
 gibt es mehrere Varianten.
 
+### Hintergrundbeleuchtung
+
+GPIO 21, aktiv HIGH, per PWM geregelt (`cfg::kBacklightDefault`, Vorgabe 80 %).
+Der aktuelle Wert steht in der Statuszeile.
+
+**GPIO 21 darf nicht für I²C verwendet werden**, obwohl 21/22 die
+Arduino-Standardpins sind: `Wire.begin()` konfiguriert den Pin um und schaltet
+die Beleuchtung aus. Das Display zeigt dann ein korrektes, aber dunkles Bild.
+Zwei `static_assert` in `include/config.h` verhindern das jetzt zur
+Übersetzungszeit — I²C liegt auf 27/22.
+
 ## Demobetrieb ohne Sensor
 
 Findet die Firmware beim Start keinen BMP581, schaltet sie automatisch in den

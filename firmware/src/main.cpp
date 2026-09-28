@@ -22,8 +22,34 @@ TFT_eSPI tft;
 vu::Meter g_meter;
 
 float g_fs = cfg::kFsNominal;
+int g_backlight = cfg::kBacklightDefault;  // Prozent
 int g_sensorAddr = -1;   // -1 = kein Sensor gefunden, Demobetrieb
 uint32_t g_samples = 0;  // verarbeitete Messwerte, fuer die Statuszeile
+
+// ------------------------------------------------- Hintergrundbeleuchtung
+
+// Helligkeit in Prozent. Ueber PWM, damit sie sich regeln laesst.
+//
+// Sich auf TFT_eSPI zu verlassen reicht nicht: die Bibliothek schaltet den Pin
+// hoechstens einmal beim init() ein. Alles, was danach den Pin anfasst --
+// etwa ein Wire.begin() auf demselben GPIO -- macht das wieder zunichte.
+// Deshalb hier explizit und nach allen anderen Initialisierungen.
+void setBacklight(int percent) {
+    if (percent < 0) percent = 0;
+    if (percent > 100) percent = 100;
+    g_backlight = percent;
+    const uint32_t duty = (percent * ((1u << cfg::kBacklightBits) - 1)) / 100;
+
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+    // Arduino-Core 3.x hat die LEDC-Schnittstelle vereinfacht.
+    ledcAttach(cfg::kBacklightPin, cfg::kBacklightPwmHz, cfg::kBacklightBits);
+    ledcWrite(cfg::kBacklightPin, duty);
+#else
+    ledcSetup(cfg::kBacklightPwmCh, cfg::kBacklightPwmHz, cfg::kBacklightBits);
+    ledcAttachPin(cfg::kBacklightPin, cfg::kBacklightPwmCh);
+    ledcWrite(cfg::kBacklightPwmCh, duty);
+#endif
+}
 
 // ------------------------------------------------------------------ Sensor
 
@@ -120,7 +146,7 @@ void drawSpectrum(const vu::Meter& m) {
 }
 
 void drawReadings(const vu::Report& r) {
-    char buf[32];
+    char buf[48];
 
     // Grosser Pegelwert
     tft.setTextDatum(TR_DATUM);
@@ -143,8 +169,8 @@ void drawReadings(const vu::Report& r) {
     // Statuszeile
     tft.setTextDatum(TL_DATUM);
     tft.setTextColor(r.pressurePlausible ? kDim : kWarn, kBg);
-    snprintf(buf, sizeof(buf), "%s Hz  %.0f/s  %s", r.band, g_fs,
-             g_sensorAddr < 0 ? "DEMO" : "BMP581");
+    snprintf(buf, sizeof(buf), "%s Hz  %.0f/s  %s  %d%%", r.band, g_fs,
+             g_sensorAddr < 0 ? "DEMO" : "BMP581", g_backlight);
     tft.drawString(buf, 8, 224, 2);
 }
 
@@ -208,9 +234,15 @@ void setup() {
 
     tft.init();
     tft.setRotation(1);  // Querformat, 320 x 240
-    splash("Bass-SPL-Meter", "Sensor wird gesucht", TFT_WHITE);
 
+    // I2C vor dem Einschalten der Beleuchtung starten. Sollte je wieder ein
+    // Pin doppelt belegt werden, faellt es dann wenigstens nicht erst nach
+    // dem Einschalten auf -- die static_asserts in config.h verhindern es
+    // ohnehin schon zur Uebersetzungszeit.
     Wire.begin(cfg::kI2cSda, cfg::kI2cScl, cfg::kI2cHz);
+    setBacklight(cfg::kBacklightDefault);
+
+    splash("Bass-SPL-Meter", "Sensor wird gesucht", TFT_WHITE);
     g_sensorAddr = findSensor();
 
     if (g_sensorAddr >= 0) {
