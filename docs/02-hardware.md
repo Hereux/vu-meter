@@ -12,7 +12,7 @@
  ESP32-2432S028R  ("Cheap Yellow Display")
    +-- 2.8" TFT 320x240 ILI9341 (SPI, onboard)
    +-- microSD (SPI, onboard)  -> Logging
-   +-- I2C (GPIO 21 SDA / 22 SCL, Header CN1)  --> BMP581
+   +-- I2C (GPIO 27 SDA / 22 SCL)              --> BMP581
    +-- Taster (GPIO 35 o. Touch)               --> Mode / Peak-Reset
    +-- WLAN (optional)                          --> Web-UI / OTA
 ```
@@ -63,15 +63,24 @@ ist:
 
 | Signal | GPIO | Hinweis |
 |---|---|---|
-| I²C SDA | 21 | Header CN1 |
-| I²C SCL | 22 | Header CN1 |
+| I²C SDA | 27 | **nicht 21** — dort liegt die Beleuchtung, siehe unten |
+| I²C SCL | 22 | |
+| Hintergrundbeleuchtung | 21 | aktiv HIGH, per PWM geregelt |
 | BMP581 VDD | 3V3 | max. 3,6 V, nicht an 5 V |
 | BMP581 INT | 35 | optional, Data-Ready-Interrupt (nur Eingang!) |
 | Taster | 0 / Touch | Peak-Reset |
 
 > Pinbelegung vor dem Löten gegen die konkrete Boardrevision prüfen — bei den
-> CYD-Boards gibt es mehrere Varianten. Frei sind üblicherweise GPIO 21, 22 und
-> 35 (nur Eingang) an CN1/P3; TFT, Touch und SD belegen den Rest.
+> CYD-Boards gibt es mehrere Varianten. Frei sind üblicherweise GPIO 22, 27 und
+> 35 (nur Eingang); TFT, Touch, SD, RGB-LED, LDR und Lautsprecher belegen den
+> Rest.
+
+**GPIO 21 ist die Hintergrundbeleuchtung, nicht frei.** Das ist die
+Stolperfalle des Boards: 21/22 sind die Arduino-Standardpins für I²C, und wer
+sie benutzt, bekommt ein funktionierendes Display mit dunkler Beleuchtung —
+`Wire.begin()` konfiguriert GPIO 21 um und schaltet das Licht aus. Genau das
+ist hier einmal passiert. `firmware/include/config.h` fängt es seitdem zur
+Übersetzungszeit mit einem `static_assert` ab.
 
 I²C mit 400 kHz. Bei 32-Byte-FIFO-Burst alle ~50 ms ist die Buslast minimal.
 Kabel zum Sensor kurz halten (<30 cm) oder auf SPI wechseln.
