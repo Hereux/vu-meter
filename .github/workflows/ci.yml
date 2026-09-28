@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # Das Referenzmodell ist die Wahrheit, gegen die alles andere geprueft wird.
+  # Laeuft ohne jede Abhaengigkeit.
+  python-model:
+    name: Referenzmodell (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Abnahmetests des Modells
+        run: python3 tools/test_dsp_model.py
+
+      - name: Auslegungsrechner laeuft durch
+        run: python3 tools/spl_calc.py
+
+      # Faengt den Fall ab, dass jemand dsp_model.py aendert und vergisst,
+      # die Sollwerte neu zu erzeugen. Dann pruefte die C++-Seite gegen
+      # veraltete Zahlen und waere trotzdem gruen.
+      - name: Referenzwerte sind aktuell
+        run: |
+          python3 tools/export_reference.py
+          if ! git diff --exit-code -- firmware/test/reference_vectors.h; then
+            echo "::error::reference_vectors.h ist nicht aktuell."
+            echo "Nach jeder Aenderung an tools/dsp_model.py:"
+            echo "  python3 tools/test_dsp_model.py && python3 tools/export_reference.py"
+            exit 1
+          fi
+
+  # Die portierte Messkette, geprueft gegen die Sollwerte des Modells.
+  # Braucht nur g++ -- kein PlatformIO, keine Toolchain.
+  dsp-tests:
+    name: Messkette (C++)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Abnahmetests
+        run: make -C firmware test
+      - name: Durchsatzmessung
+        run: make -C firmware bench
+
+  # Baut die Firmware fuer das Board. Das ist der Teil, der sich ohne
+  # ESP32-Toolchain nicht lokal pruefen laesst.
+  esp32-build:
+    name: Firmware (ESP32)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: PlatformIO-Pakete zwischenspeichern
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio/.cache
+            ~/.platformio/packages
+            ~/.platformio/platforms
+          key: pio-${{ runner.os }}-${{ hashFiles('firmware/platformio.ini') }}
+          restore-keys: pio-${{ runner.os }}-
+
+      - name: PlatformIO installieren
+        run: pip install --upgrade platformio
+
+      - name: Bauen
+        run: pio run -e esp32
+        working-directory: firmware
+
+      - name: Speicherbelegung ausgeben
+        run: |
+          echo "### Speicherbelegung" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          pio run -e esp32 -t size 2>&1 | grep -E "RAM:|Flash:" >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+        working-directory: firmware
+
+      # Damit laesst sich das Board flashen, ohne lokal eine Toolchain
+      # einzurichten.
+      - name: Binaerdateien bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-esp32
+          path: |
+            firmware/.pio/build/esp32/firmware.bin
+            firmware/.pio/build/esp32/bootloader.bin
+            firmware/.pio/build/esp32/partitions.bin
+          if-no-files-found: error
+
+  # Faengt genau die Fehlerklasse ab, die beim Erstellen des Modells
+  # aufgetreten ist: Geometrie, die kompiliert, aber nicht mannigfaltig ist
+  # und die deshalb kein Slicer verarbeiten kann.
+  cad:
+    name: Gehaeuse (OpenSCAD)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: OpenSCAD installieren
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends openscad
+
+      - name: STLs bauen und auf Mannigfaltigkeit pruefen
+        run: |
+          set -o pipefail
+          fail=0
+          build() {
+            name="$1"; shift
+            echo "--- $name"
+            if ! openscad -o "stl/$name.stl" "$@" 2>"/tmp/$name.log"; then
+              echo "::error::$name liess sich nicht bauen"; cat "/tmp/$name.log"; fail=1; return
+            fi
+            if ! grep -q "Simple: *yes" "/tmp/$name.log"; then
+              echo "::error::$name ist nicht mannigfaltig"
+              grep -i "simple" "/tmp/$name.log" || true
+              fail=1
+            fi
+          }
+          build back     -D 'part="back"'  case.scad
+          build bezel    -D 'part="bezel"' case.scad
+          build cal_cup  -D 'part="cup"'   sensor_chamber.scad
+          build cal_lid  -D 'part="lid"'   sensor_chamber.scad
+          build fit_test                   fit_test.scad
+          exit $fail
+        working-directory: case
+
+      - name: Geaenderte STLs melden
+        run: |
+          if ! git diff --exit-code --stat -- stl/; then
+            echo "::warning::Die eingecheckten STLs weichen vom Modell ab."
+          fi
+        working-directory: case
