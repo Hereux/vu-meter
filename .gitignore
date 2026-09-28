@@ -1,0 +1,5 @@
+# Buildartefakte
+firmware/build/
+.pio/
+__pycache__/
+*.pyc
