@@ -36,7 +36,7 @@ Drei Befunde, die in die Firmware einfließen:
 
 ## Phase 2 — Sensor-Bringup  (~1 Tag, nach Lieferung)
 
-- [x] 2.0 CI baut die ESP32-Firmware (`.github/workflows/ci.yml`) und legt die Binärdateien als Artefakt ab. Bis dahin war `main.cpp` nie übersetzt worden — meine Arbeitsumgebung sperrt die PlatformIO-Registry.
+- [x] 2.0 CI baut die ESP32-Firmware (`.github/workflows/ci.yml`) und legt die Binärdateien als Artefakt ab. Bis dahin war `main.cpp` nie übersetzt worden — meine Arbeitsumgebung sperrt die PlatformIO-Registry. **Erster Lauf grün**, alle fünf Jobs: RAM 15,0 %, Flash 25,4 %, Bauzeit 48 s.
 - [x] 2.0a Demobetrieb ohne Sensor: synthetischer Sweep durch die echte Messkette, Anzeige auf dem TFT. Prüfbar mit dem Board allein.
 - [ ] 2.1 Firmware flashen (`pio run -e esp32 -t upload --upload-port COM13`), Display prüfen: 150,0 dB konstant, Frequenz wandert 20 → 80 Hz in 12 s. Bei dunklem Display die serielle Ausgabe prüfen — dann stimmt nur die TFT-Konfiguration nicht.
 - [ ] 2.2 BMP581 per I²C anbinden, Chip-ID lesen, Absolutdruck plausibel (800-1100 hPa)?

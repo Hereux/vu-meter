@@ -135,6 +135,22 @@ Reichlich Reserve. Sensor-Task mit hoher Priorität und eigenem Kern, damit der
 Display-Refresh keine FIFO-Overruns verursacht (FIFO fasst nur 32 Werte ≈ 55 ms
 bei 580 Hz — deshalb mindestens alle 40 ms auslesen).
 
+## Speicherbelegung (gemessen)
+
+Aus dem CI-Build mit Demobetrieb und TFT_eSPI, also inklusive Anzeige:
+
+| | belegt | verfügbar | |
+|---|---|---|---|
+| RAM (statisch, zur Linkzeit) | 49 000 B | 327 680 B | 15,0 % |
+| Flash | 332 437 B | 1 310 720 B | 25,4 % |
+
+Der RAM-Wert ist die statische Belegung beim Linken; Task-Stacks und
+FreeRTOS-Heap kommen zur Laufzeit dazu. Die FFT-Puffer im `Meter` sind darin
+enthalten (Ringpuffer, Block und Betragsspektrum, zusammen rund 12 kB bei
+N = 1024). Für Logging, WLAN und einen zweiten Sensor ist reichlich Platz.
+
+Bauzeit im CI: 48 s.
+
 ## Absolutdruck-Ausgang
 
 Der Report enthält neben den Pegelwerten den geglätteten **Absolutdruck vor dem
