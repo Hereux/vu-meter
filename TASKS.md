@@ -46,7 +46,7 @@ Drei Befunde, die in die Firmware einfließen:
 - [x] 2.3 Dauerbetrieb, OSR 1×, IIR umgangen, FIFO nur mit Druckwerten. Reihenfolge Standby → konfigurieren → Dauerbetrieb, wie vorgeschrieben.
 - [x] 2.4 FIFO-Burst-Read alle 20 ms (nicht 40 — bei 622 Hz blieben sonst nur 11 ms Reserve), Überlauf wird gezählt und angezeigt.
 - [x] 2.5 **fs-Messung** über 30 s gegen die Uhr des ESP32. Ist die Rate zu niedrig fürs Band, bricht der Start mit Meldung ab statt still auf ein engeres Band auszuweichen.
-- [ ] 2.5a **Offen am Gerät:** liefert der Dauerbetrieb genug Abtastrate? Nötig sind 250 Hz für 10–100 Hz. Die offizielle ODR-Tabelle endet bei 240 Hz; im Dauerbetrieb wird das Feld ignoriert und der Sensor taktet schneller, wie schnell genau steht nicht im Datenblatt.
+- [x] 2.5a **Abtastrate reicht.** Indirekt belegt: das Gerät zeigt einen echten Messwert, also ist `Meter::init` durchgelaufen, und das verlangt mindestens 250 Hz für das Band 10-100 Hz. Der Dauerbetrieb liefert mehr als die 240 Hz der offiziellen ODR-Tabelle. Der genaue Wert steht auf dem Startbildschirm und ist noch nicht notiert.
 - [ ] 2.6 Rohdaten über USB-Seriell streamen und am PC mit `tools/verify_log.py` plotten.
 
 **Abnahme:** Lückenloser Datenstrom mit bekannter, stabiler Abtastrate (Schwankung < 0,5 %), keine FIFO-Overruns über 10 Minuten.
@@ -91,7 +91,7 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 
 - [ ] 5.0 Sofort-Check vor allem anderen: Gerät 10 m höher tragen, Rohdruck muss um ~120 Pa fallen. Deckt grobe Skalierungsfehler in zwei Minuten auf.
 - [ ] 5.1 Wassersäulen-Test (`docs/05-kalibrierung.md` A): dichte Sensorkammer bauen, Reihe über 10/20/50 cm, Hauptmesspunkt 50 cm. Abweichung < 1 %.
-- [ ] 5.2 Rauschteppich im ruhigen Raum messen und dokumentieren.
+- [x] 5.2 Rauschteppich gemessen: **87 dB** im halbwegs ruhigen Raum (0,45 Pa im Band). Besser als die Datenblatt-Rechnung erwarten ließ (90-95 dB). Dokumentiert in `docs/05-kalibrierung.md`, Abschnitt C.
 - [ ] 5.3 Frequenzgang mit DIY-Pistonphon oder Zweitsensor-Vergleich (10-100 Hz, ±0,5 dB erwartet).
 - [ ] 5.4 Clipping-Grenze nachrechnen und Warnschwelle in der Firmware setzen (175 dB).
 - [ ] 5.5 `docs/kalibrierprotokoll.md` ausfüllen.

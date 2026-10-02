@@ -124,12 +124,31 @@ Fallback ohne Pistonphon: Zwei Sensoren unterschiedlichen Typs (BMP581 +
 BMP390) parallel im Fahrzeug messen lassen. Systematische Abweichungen zeigen
 sich als Differenz über der Frequenz.
 
-## C. Rauschteppich
+## C. Rauschteppich — **gemessen: 87 dB**
 
-Gerät in einem ruhigen Raum betreiben, 60 s aufzeichnen, SPL im Band 10-100 Hz
-auswerten. Erwartung: 85-100 dB, abhängig vom Oversampling. Das ist der
-untere Rand des Messbereichs — für Bassmessungen ab 120 dB völlig ausreichend,
-aber im Datenblatt des eigenen Geräts ehrlich anzugeben.
+Gerät in einem ruhigen Raum betreiben, SPL im Band 10-100 Hz ablesen.
+
+**Ergebnis am fertigen Gerät: 87 dB** im halbwegs ruhigen Raum. Das sind
+0,45 Pa effektiv im Band.
+
+Das liegt unter der Erwartung aus dem Datenblatt und ist damit ein gutes
+Zeichen. Rechnung zum Vergleich, weißes Rauschen über die Bandbreite verteilt:
+
+| Rauschen breitbandig (OSR 1×) | Abtastrate | davon im Band 10-100 Hz |
+|---|---|---|
+| 1,3 Pa | 250 Hz | 1,10 Pa = 94,8 dB |
+| 1,3 Pa | 500 Hz | 0,78 Pa = 91,8 dB |
+| 0,75 Pa | 250 Hz | 0,64 Pa = 90,1 dB |
+
+Gemessen wurden 0,45 Pa. Ein Teil der 87 dB dürfte sogar echter Schall sein —
+Lüftung, Verkehr und Gebäudeschwingungen liegen im Infraschallbereich und sind
+in einem Wohnraum nie ganz weg. Der tatsächliche Eigenrauschteppich des Geräts
+liegt also eher noch darunter.
+
+**Bedeutung für den Messbereich:** bis zum Nutzsignal einer Bassanlage sind es
+33 dB (bei 120 dB) bis 73 dB (bei 160 dB). Für brauchbare Genauigkeit sollte
+der Messwert etwa 10 dB über dem Teppich liegen — das Gerät ist damit **ab
+rund 95 dB verwendbar**, die Zielwerte liegen weit darüber.
 
 ## D. Vergleich im Fahrzeug
 

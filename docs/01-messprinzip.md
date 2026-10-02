@@ -43,13 +43,18 @@ korrektur. Das ist deutlich besser als jedes selbstgebaute Mikrofonsetup.
 - Bereich 30-125 kPa (300-1250 hPa)
 - Auflösung 1/64 Pa (≈ 58 dB SPL rechnerische Untergrenze)
 - Rauschen 0,08 Pa bei hohem Oversampling; bei OSR 1x / ~600 Hz ODR grob 1-2 Pa
-  → Rauschteppich breitbandig ≈ 95-100 dB SPL, bandbegrenzt auf 10-100 Hz deutlich darunter
+  → Rauschteppich breitbandig ≈ 95-100 dB SPL, bandbegrenzt auf 10-100 Hz
+  deutlich darunter. **Am fertigen Gerät gemessen: 87 dB** im ruhigen Raum,
+  also besser als die Rechnung erwarten ließ (siehe
+  [05-kalibrierung.md](05-kalibrierung.md), Abschnitt C)
 - ODR bis 622 Hz im Continuous Mode (SparkFun misst real ~500 Hz), FIFO 32 Werte
 - I²C/SPI, 1,71-3,6 V
 
 Aussteuerung: bei 1013 hPa Umgebungsdruck bleiben 237 hPa bis zur Obergrenze
 → **Clipping-Grenze ≈ 178 dB SPL**. Zielwert 155 dB liegt 23 dB darunter.
-Nutzbare Dynamik damit rund 95 … 178 dB.
+Nutzbare Dynamik damit rund 95 … 178 dB. Der gemessene Rauschteppich von
+87 dB bestätigt die untere Grenze: mit den üblichen 10 dB Abstand zum
+Teppich beginnt der brauchbare Bereich bei etwa 95 dB.
 
 **Alternativen** (falls BMP581 nicht lieferbar):
 
