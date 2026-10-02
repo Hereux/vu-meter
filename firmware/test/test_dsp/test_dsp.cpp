@@ -14,6 +14,7 @@
 
 #include "../../src/dsp.h"
 #include "../../src/meter.h"
+#include "../../src/bmp581_regs.h"
 #include "../../src/spectrum.h"
 #include "../reference_vectors.h"
 
@@ -294,6 +295,75 @@ void testRawPressure() {
         "unplausibler Rohdruck wird gemeldet (Sensor defekt o. falsch verdrahtet)");
 }
 
+void testBmp581Registers() {
+    std::printf("\nBMP581: Bitpackung der Konfigurationsregister\n");
+    using namespace bmp581;
+
+    // OSR_CONFIG: Bit 6 press_en, Bits 5:3 osr_p, Bits 2:0 osr_t
+    checkNear(osrConfig(kOsr1x, kOsr1x, true), 0x40, 0,
+              "OSR 1x/1x mit Druckmessung");
+    checkNear(osrConfig(kOsr4x, kOsr2x, true), 0x51, 0, "OSR 4x/2x");
+    checkNear(osrConfig(kOsr1x, kOsr1x, false), 0x00, 0, "ohne Druckmessung");
+
+    // ODR_CONFIG: Bit 7 deep_dis, Bits 6:2 odr, Bits 1:0 pwr_mode
+    checkNear(odrConfig(0, kModeContinuous, true), 0x83, 0,
+              "Continuous, Tiefschlaf aus");
+    checkNear(odrConfig(0, kModeStandby, true), 0x80, 0, "Standby");
+    checkNear(odrConfig(0x0A, kModeStandby, true), 0xA8, 0, "ODR-Feld 0x0A");
+
+    checkNear(fifoSel(kFifoPressOnly, kFifoDecNone), 0x02, 0,
+              "FIFO nur Druck, keine Dezimierung");
+    checkNear(fifoFrameCount(0xC5), 5, 0,
+              "FIFO-Zaehler maskiert die oberen Bits");
+
+    check(isChipIdValid(0x50) && isChipIdValid(0x51),
+          "beide gueltigen Chip-IDs werden erkannt");
+    check(!isChipIdValid(0x58) && !isChipIdValid(0x00),
+          "fremde Chip-ID wird abgelehnt");
+}
+
+void testBmp581Decoding() {
+    std::printf("\nBMP581: Dekodierung der Rohwerte\n");
+    using namespace bmp581;
+
+    // 101325 Pa entspricht roh 6484800 = 0x62F340, Bytes XLSB..MSB
+    const uint8_t amb[3] = {0x40, 0xF3, 0x62};
+    checkNear(pressureFromBytes(amb), 101325.0f, 0.02f,
+              "Normaldruck aus drei Bytes");
+
+    const uint8_t zero[3] = {0x00, 0x00, 0x00};
+    checkNear(pressureFromBytes(zero), 0.0f, 1e-6f, "Null");
+
+    const uint8_t full[3] = {0xFF, 0xFF, 0xFF};
+    checkNear(pressureFromBytes(full), 262143.984375f, 0.01f,
+              "Vollausschlag 24 Bit");
+
+    // Aufloesung: ein Zaehlschritt sind 1/64 Pa
+    const uint8_t one[3] = {0x01, 0x00, 0x00};
+    checkNear(pressureFromBytes(one), 1.0f / 64.0f, 1e-6f,
+              "ein Zaehlschritt ist 1/64 Pa");
+
+    // Temperatur, 24 Bit mit Vorzeichen
+    const uint8_t t25[3] = {0x00, 0x00, 0x19};
+    checkNear(temperatureFromBytes(t25), 25.0f, 0.001f, "+25 Grad");
+    const uint8_t tneg[3] = {0x00, 0x00, 0xF6};
+    checkNear(temperatureFromBytes(tneg), -10.0f, 0.001f,
+              "-10 Grad, Vorzeichen erweitert");
+
+    const uint8_t empty[3] = {0x7F, 0x7F, 0x7F};
+    check(frameEmpty(empty, 3), "leerer FIFO-Rahmen wird erkannt");
+    const uint8_t used[3] = {0x7F, 0x7F, 0x00};
+    check(!frameEmpty(used, 3), "belegter Rahmen wird nicht als leer gewertet");
+
+    // Ein realer Messwert darf nicht zufaellig wie ein leerer Rahmen aussehen:
+    // 0x7F7F7F entspricht 130429 Pa und liegt ausserhalb des Messbereichs.
+    const uint8_t lookalike[3] = {0x7F, 0x7F, 0x7F};
+    const float pa = pressureFromBytes(lookalike);
+    check(pa > 125000.0f,
+          "das Leer-Muster liegt ausserhalb des Sensorbereichs (keine "
+          "Verwechslung mit echten Messwerten)");
+}
+
 void testFftSanity() {
   std::printf("\nFFT-Grundpruefungen\n");
   vu::Spectrum sp;
@@ -329,6 +399,8 @@ int main() {
   testBandSwitching();
   testRobustness();
   testRawPressure();
+  testBmp581Registers();
+  testBmp581Decoding();
   testFftSanity();
   std::printf("\n%d von %d Tests bestanden\n", g_total - g_failed, g_total);
   return g_failed == 0 ? 0 : 1;

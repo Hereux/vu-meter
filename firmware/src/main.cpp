@@ -14,22 +14,21 @@
 #include <Wire.h>
 
 #include "../include/config.h"
+#include "bmp581.h"
 #include "meter.h"
 
 namespace {
 
 TFT_eSPI tft;
 vu::Meter g_meter;
+Bmp581 g_sensor;
 
 float g_fs = cfg::kFsNominal;
 int g_backlight = cfg::kBacklightDefault;  // Prozent
 
-// Phase 2 setzt das auf true, sobald der BMP581-Treiber echte Werte liefert.
-// Bis dahin laeuft der Demobetrieb auch dann, wenn der Sensor erkannt wurde --
-// sonst steht die Anzeige nach dem Erkennen still und zeigt dauerhaft -inf,
-// weil niemand Messwerte einspeist.
-constexpr bool kSensorDriverReady = false;
-bool g_demoMode = true;
+bool g_demoMode = true;        // kein Sensor gefunden -> Testsignal
+bool g_fsError = false;        // gemessene Abtastrate zu niedrig fuers Band
+uint32_t g_overruns = 0;       // FIFO lief voll, Messwerte fehlen
 int g_sensorAddr = -1;   // -1 = kein Sensor gefunden, Demobetrieb
 uint32_t g_samples = 0;  // verarbeitete Messwerte, fuer die Statuszeile
 
@@ -60,26 +59,42 @@ void setBacklight(int percent) {
 
 // ------------------------------------------------------------------ Sensor
 
-// Liest ein Register ueber I2C. Gibt false zurueck, wenn niemand antwortet.
-bool readReg(int addr, uint8_t reg, uint8_t* value) {
-    Wire.beginTransmission(addr);
-    Wire.write(reg);
-    if (Wire.endTransmission(false) != 0) return false;
-    if (Wire.requestFrom(addr, 1) != 1) return false;
-    *value = Wire.read();
-    return true;
-}
+// Misst die tatsaechliche Abtastrate des Sensors.
+//
+// Der BMP581 taktet im Dauerbetrieb mit einem internen RC-Oszillator; die
+// Rate haengt vom Oversampling ab und weicht vom Nennwert ab. Sie geht 1:1 in
+// die Frequenzanzeige ein -- 5 % Fehler bei 40 Hz sind 2 Hz. Deshalb wird sie
+// gemessen statt angenommen, und daraus werden Filter und FFT-Frequenzachse
+// ausgelegt.
+//
+// Gezaehlt wird gegen die Uhr des ESP32, nicht gegen die des Sensors.
+float measureSampleRate(float seconds) {
+    float scratch[bmp581::kFifoMaxFrames];
 
-// Sucht den BMP581 auf beiden moeglichen Adressen.
-int findSensor() {
-    for (int i = 0; i < 2; ++i) {
-        uint8_t id = 0;
-        if (readReg(cfg::kBmp581Addr[i], cfg::kBmp581RegChipId, &id) &&
-            id == cfg::kBmp581ChipId) {
-            return cfg::kBmp581Addr[i];
+    // Erst den FIFO leeren, damit angesammelte Werte nicht mitgezaehlt werden.
+    g_sensor.readFifo(scratch, bmp581::kFifoMaxFrames);
+
+    const uint32_t t0 = micros();
+    uint32_t counted = 0;
+    uint32_t overruns = 0;
+
+    while ((micros() - t0) < static_cast<uint32_t>(seconds * 1e6f)) {
+        const int n = g_sensor.readFifo(scratch, bmp581::kFifoMaxFrames);
+        if (n > 0) {
+            counted += static_cast<uint32_t>(n);
+            if (g_sensor.overrun()) ++overruns;
         }
+        delay(cfg::kFifoReadIntervalMs);
     }
-    return -1;
+    const uint32_t dtUs = micros() - t0;
+
+    if (overruns > 0) {
+        // Bei Ueberlauf fehlen Werte, die Rate kaeme zu niedrig heraus.
+        Serial.printf("Abtastratenmessung: %lu Ueberlaeufe, Ergebnis unsicher\n",
+                      static_cast<unsigned long>(overruns));
+    }
+    if (counted == 0 || dtUs == 0) return 0.0f;
+    return static_cast<float>(counted) * 1e6f / static_cast<float>(dtUs);
 }
 
 // ----------------------------------------------------------- Demosignal
@@ -206,14 +221,18 @@ void drawReadings(const vu::Report& r) {
 
     // Statuszeile
     tft.setTextDatum(TL_DATUM);
-    tft.setTextColor(r.pressurePlausible ? kDim : kWarn, kBg);
-    char mode[16];
+    tft.setTextColor((r.pressurePlausible && g_overruns == 0) ? kDim : kWarn,
+                     kBg);
+    char mode[20];
     if (!g_demoMode) {
-        snprintf(mode, sizeof(mode), "BMP581");
-    } else if (g_sensorAddr >= 0) {
-        // Sensor da, Treiber noch nicht -- beides anzeigen, damit nicht der
-        // Eindruck entsteht, der Sensor fehle.
-        snprintf(mode, sizeof(mode), "DEMO 0x%02X", g_sensorAddr);
+        if (g_overruns > 0) {
+            // Nicht verschweigen: bei Ueberlauf fehlen Messwerte, der
+            // angezeigte Pegel ist dann zu niedrig.
+            snprintf(mode, sizeof(mode), "BMP581 OVR%lu",
+                     static_cast<unsigned long>(g_overruns));
+        } else {
+            snprintf(mode, sizeof(mode), "BMP581 0x%02X", g_sensor.address());
+        }
     } else {
         snprintf(mode, sizeof(mode), "DEMO");
     }
@@ -234,8 +253,16 @@ void sensorTask(void*) {
 
     for (;;) {
         if (!g_demoMode) {
-            // TODO(Phase 2): FIFO-Burst lesen, Overrun-Flag auswerten, jeden
-            // Wert durch g_meter.process(pa) schicken.
+            float samples[bmp581::kFifoMaxFrames];
+            const int n = g_sensor.readFifo(samples, bmp581::kFifoMaxFrames);
+            if (n > 0) {
+                for (int i = 0; i < n; ++i) g_meter.process(samples[i]);
+                g_samples += static_cast<uint32_t>(n);
+                // Ein voller FIFO heisst, dass zwischen zwei Lesevorgaengen
+                // Messwerte verloren gingen. Still weiterzurechnen waere
+                // falsch -- die Anzeige weist es aus.
+                if (g_sensor.overrun()) ++g_overruns;
+            }
         } else {
             // Demobetrieb: so viele Werte erzeugen, wie in der verstrichenen
             // Zeit angefallen waeren. An der echten Uhr ausgerichtet, damit
@@ -291,28 +318,43 @@ void setup() {
     setBacklight(cfg::kBacklightDefault);
 
     splash("Bass-SPL-Meter", "Sensor wird gesucht", TFT_WHITE);
-    g_sensorAddr = findSensor();
 
-    g_demoMode = !(g_sensorAddr >= 0 && kSensorDriverReady);
+    g_demoMode = !g_sensor.begin(Wire);
 
-    if (g_sensorAddr >= 0) {
-        Serial.printf("BMP581 auf 0x%02X gefunden%s\n", g_sensorAddr,
-                      g_demoMode ? ", Treiber fehlt noch -> Demobetrieb" : "");
-        // TODO(Phase 2): Continuous Mode, Oversampling 1x, IIR auf Bypass,
-        // FIFO einschalten, dann die Abtastrate ueber 30 s messen. Danach
-        // kSensorDriverReady auf true setzen.
-        splash(g_demoMode ? "BMP581 erkannt" : "BMP581 aktiv",
-               g_demoMode ? "Treiber folgt - laeuft im Demobetrieb" : nullptr,
-               TFT_GREEN);
+    if (!g_demoMode) {
+        g_sensorAddr = g_sensor.address();
+        Serial.printf("BMP581 auf 0x%02X, Abtastrate wird gemessen\n",
+                      g_sensorAddr);
+        char line[48];
+        snprintf(line, sizeof(line), "%.0f s messen", cfg::kFsCalibSeconds);
+        splash("BMP581 aktiv", line, TFT_GREEN);
+
+        g_fs = measureSampleRate(cfg::kFsCalibSeconds);
+        Serial.printf("gemessene Abtastrate: %.2f Hz\n", g_fs);
+
+        snprintf(line, sizeof(line), "%.1f Hz gemessen", g_fs);
+        splash("Abtastrate", line, TFT_GREEN);
     } else {
         Serial.println("Kein Sensor gefunden, Demobetrieb");
         splash("Kein Sensor", "Demobetrieb mit Testsignal", TFT_ORANGE);
+        g_fs = cfg::kFsNominal;
     }
     delay(1500);
 
     if (!g_meter.init(g_fs, vu::Band::k10to100, cfg::kFftLive)) {
-        splash("FEHLER", "Abtastrate zu niedrig fuer das Band", TFT_RED);
-        Serial.println("Meter::init fehlgeschlagen");
+        // Kein stiller Rueckfall auf ein engeres Band: dann staende eine Zahl
+        // auf dem Display, die etwas anderes misst als beschriftet. Lieber
+        // deutlich sagen, was gemessen wurde und was noetig waere.
+        const float needed = vu::bandLimits(vu::Band::k10to100).hi /
+                             vu::kMaxBandFraction;
+        char line[64];
+        snprintf(line, sizeof(line), "%.0f Hz gemessen, %.0f Hz noetig", g_fs,
+                 needed);
+        splash("Abtastrate zu niedrig", line, TFT_RED);
+        Serial.printf("Meter::init fehlgeschlagen: fs=%.2f Hz, benoetigt "
+                      "mindestens %.2f Hz fuer das Band 10-100 Hz\n",
+                      g_fs, needed);
+        g_fsError = true;
         return;
     }
 
@@ -327,11 +369,17 @@ void loop() {
     static uint32_t last = 0;
     if (millis() - last > 5000) {
         last = millis();
-        const vu::Report r = g_meter.report();
-        Serial.printf("%s  %6.1f dB  f0 %6.2f Hz  peak %6.1f  roh %.0f Pa  n=%lu\n",
-                      g_demoMode ? "DEMO" : "BMP", r.splSlow, r.f0,
-                      r.splPeak, r.rawPressurePa,
-                      static_cast<unsigned long>(g_samples));
+        if (g_fsError) {
+            Serial.printf("Abtastrate zu niedrig: %.2f Hz\n", g_fs);
+        } else {
+            const vu::Report r = g_meter.report();
+            Serial.printf("%s  %6.1f dB  f0 %6.2f Hz  peak %6.1f  roh %.0f Pa  "
+                          "n=%lu  ovr=%lu\n",
+                          g_demoMode ? "DEMO" : "BMP", r.splSlow, r.f0,
+                          r.splPeak, r.rawPressurePa,
+                          static_cast<unsigned long>(g_samples),
+                          static_cast<unsigned long>(g_overruns));
+        }
     }
     vTaskDelay(pdMS_TO_TICKS(200));
 }

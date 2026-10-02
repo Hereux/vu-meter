@@ -42,10 +42,11 @@ Drei Befunde, die in die Firmware einfließen:
 - [x] 2.1a Beleuchtung an, Anzeige läuft. **Zwei Befunde am Gerät:** das Spektrum überlappte die Statuszeile um 4 px (Layout jetzt aus der Bildschirmhöhe abgeleitet, mit `static_assert`), und bei erkanntem Sensor stand die Anzeige still, weil der Treiber fehlt.
 - [x] 2.1b **Sensor am I²C erkannt** (Chip-ID 0x50). Solange der Treiber fehlt, läuft der Demobetrieb weiter und die Statuszeile zeigt `DEMO 0x47` — Sensor da, Treiber nicht.
 - [ ] 2.1c Nachprüfen am Gerät: Statuszeile vollständig sichtbar, Spektrum endet darüber.
-- [ ] 2.2 BMP581 per I²C anbinden, Chip-ID lesen, Absolutdruck plausibel (800-1100 hPa)?
-- [ ] 2.3 Continuous Mode, OSR 1x, IIR aus, FIFO aktivieren.
-- [ ] 2.4 FIFO-Burst-Read alle 40 ms, Overrun-Flag auswerten.
-- [ ] 2.5 **fs-Kalibrierung**: über 30 s Samples zählen, reale Abtastrate bestimmen und in NVS speichern. Gerüst in `src/main.cpp`, TODOs markiert. Bei Overrun muss die Zählung neu starten, sonst kommt die Rate zu niedrig heraus.
+- [x] 2.2 BMP581 per I²C angebunden (`src/bmp581.{h,cpp}`), beide Adressen und beide gültigen Chip-IDs (0x50/0x51). Registerwerte aus der offiziellen Bosch-API belegt.
+- [x] 2.3 Dauerbetrieb, OSR 1×, IIR umgangen, FIFO nur mit Druckwerten. Reihenfolge Standby → konfigurieren → Dauerbetrieb, wie vorgeschrieben.
+- [x] 2.4 FIFO-Burst-Read alle 20 ms (nicht 40 — bei 622 Hz blieben sonst nur 11 ms Reserve), Überlauf wird gezählt und angezeigt.
+- [x] 2.5 **fs-Messung** über 30 s gegen die Uhr des ESP32. Ist die Rate zu niedrig fürs Band, bricht der Start mit Meldung ab statt still auf ein engeres Band auszuweichen.
+- [ ] 2.5a **Offen am Gerät:** liefert der Dauerbetrieb genug Abtastrate? Nötig sind 250 Hz für 10–100 Hz. Die offizielle ODR-Tabelle endet bei 240 Hz; im Dauerbetrieb wird das Feld ignoriert und der Sensor taktet schneller, wie schnell genau steht nicht im Datenblatt.
 - [ ] 2.6 Rohdaten über USB-Seriell streamen und am PC mit `tools/verify_log.py` plotten.
 
 **Abnahme:** Lückenloser Datenstrom mit bekannter, stabiler Abtastrate (Schwankung < 0,5 %), keine FIFO-Overruns über 10 Minuten.

@@ -35,14 +35,9 @@ static_assert(kI2cScl != kBacklightPin,
               "I2C-SCL liegt auf dem Backlight-Pin: Wire.begin() wuerde die "
               "Hintergrundbeleuchtung ausschalten");
 
-// ---- Sensor: Erkennung ohne Herstellerbibliothek ----
-// Der BMP581 meldet sich auf 0x47 (SDO high) oder 0x46 (SDO low) und liefert
-// in Register 0x01 die Chip-ID 0x50. Das reicht, um festzustellen, ob ein
-// Sensor angeschlossen ist -- ohne eine Bibliothek einzubinden, die erst in
-// Phase 2 gebraucht wird.
-constexpr int kBmp581Addr[2] = {0x47, 0x46};
-constexpr int kBmp581RegChipId = 0x01;
-constexpr int kBmp581ChipId = 0x50;
+// Adressen, Register und Kennungen des BMP581 stehen in src/bmp581_regs.h,
+// belegt aus der offiziellen Bosch-API. Hier doppelt gefuehrt zu werden waere
+// eine Einladung zum Auseinanderlaufen.
 
 // ---- Demobetrieb ohne Sensor ----
 // Wird kein Sensor gefunden, speist das Geraet ein synthetisches Signal durch
@@ -58,7 +53,10 @@ constexpr float kDemoAmbientPa = 101325.0f;
 // ---- Sensor ---------------------------------------------------------------
 constexpr float kFsNominal = 622.0f;   // Continuous Mode, OSR 1x
 constexpr float kFsCalibSeconds = 30.0f;  // Dauer der Abtastraten-Kalibrierung
-constexpr int kFifoReadIntervalMs = 40;   // FIFO fasst 32 Werte = 51 ms
+// FIFO fasst 32 Werte. Bei 622 Hz sind das 51 ms -- bei 40 ms Leseabstand
+// blieben nur 11 ms Reserve fuer Jitter. 20 ms lassen rund 12 Rahmen je
+// Lesevorgang und damit reichlich Luft.
+constexpr int kFifoReadIntervalMs = 20;
 // Plausibilitaetsgrenzen fuer den Rohdruck. Ausserhalb -> "OVER" anzeigen.
 constexpr float kPressureMinPa = 35000.0f;
 constexpr float kPressureMaxPa = 120000.0f;
