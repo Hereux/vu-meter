@@ -23,6 +23,13 @@ vu::Meter g_meter;
 
 float g_fs = cfg::kFsNominal;
 int g_backlight = cfg::kBacklightDefault;  // Prozent
+
+// Phase 2 setzt das auf true, sobald der BMP581-Treiber echte Werte liefert.
+// Bis dahin laeuft der Demobetrieb auch dann, wenn der Sensor erkannt wurde --
+// sonst steht die Anzeige nach dem Erkennen still und zeigt dauerhaft -inf,
+// weil niemand Messwerte einspeist.
+constexpr bool kSensorDriverReady = false;
+bool g_demoMode = true;
 int g_sensorAddr = -1;   // -1 = kein Sensor gefunden, Demobetrieb
 uint32_t g_samples = 0;  // verarbeitete Messwerte, fuer die Statuszeile
 
@@ -97,16 +104,40 @@ float demoSample(float dt) {
 
 // -------------------------------------------------------------- Anzeige
 
+// Eigene Pruefung statt isfinite(): das ist in <math.h> ein Makro und in
+// <cmath> eine Funktion in std, je nach Toolchain auch beides. Der Vergleich
+// hier kommt ohne beides aus.
+inline bool plausible(float v) {
+    return v == v && v > -1e30f && v < 1e30f;  // weder NaN noch unendlich
+}
+
 constexpr uint16_t kBg = TFT_BLACK;
 constexpr uint16_t kFg = TFT_WHITE;
 constexpr uint16_t kDim = 0x7BEF;  // mittleres Grau
 constexpr uint16_t kAccent = TFT_CYAN;
 constexpr uint16_t kWarn = TFT_ORANGE;
 
-constexpr int kSpecY = 150;   // Oberkante des Spektrums
-constexpr int kSpecH = 78;
+// Layout. Aus der Bildschirmgroesse abgeleitet statt aus geratenen Zahlen:
+// die Statuszeile hing vorher unter dem Spektrum und wurde bei jedem Refresh
+// um vier Pixel ueberschrieben.
+constexpr int kScreenW = 320;
+constexpr int kScreenH = 240;
+constexpr int kFontSmallH = 16;  // Zeilenhoehe von TFT_eSPI-Font 2
+
+constexpr int kStatusY = kScreenH - kFontSmallH;  // Statuszeile ganz unten
+constexpr int kSpecGap = 2;                       // Luft darueber
 constexpr int kSpecX = 8;
 constexpr int kSpecW = 304;
+constexpr int kSpecY = 150;                       // Oberkante des Spektrums
+constexpr int kSpecH = kStatusY - kSpecGap - kSpecY;
+
+static_assert(kSpecY + kSpecH + kSpecGap <= kStatusY,
+              "Spektrum ragt in die Statuszeile");
+static_assert(kStatusY + kFontSmallH <= kScreenH,
+              "Statuszeile ragt ueber den unteren Bildrand");
+static_assert(kSpecX + kSpecW <= kScreenW,
+              "Spektrum ragt ueber den rechten Bildrand");
+static_assert(kSpecH > 0, "Kein Platz fuer das Spektrum");
 
 void drawStatic() {
     tft.fillScreen(kBg);
@@ -151,7 +182,12 @@ void drawReadings(const vu::Report& r) {
     // Grosser Pegelwert
     tft.setTextDatum(TR_DATUM);
     tft.setTextColor(kFg, kBg);
-    snprintf(buf, sizeof(buf), "%5.1f", r.splSlow);
+    // Font 7 ist eine Sieben-Segment-Schrift und kennt nur Ziffern, Punkt,
+    // Doppelpunkt, Minus und Leerzeichen. Vor dem ersten eingespeisten
+    // Messwert ist der Pegel -inf; ungefiltert stuenden dort Fragmente.
+    float level = r.splSlow;
+    if (!plausible(level) || level < 0.0f) level = 0.0f;
+    snprintf(buf, sizeof(buf), "%5.1f", level);
     tft.drawString(buf, 228, 30, 7);
 
     // Dominante Frequenz
@@ -163,15 +199,27 @@ void drawReadings(const vu::Report& r) {
     // Spitzenwerte
     tft.setTextDatum(TR_DATUM);
     tft.setTextColor(kDim, kBg);
-    snprintf(buf, sizeof(buf), "max %5.1f  peak %5.1f", r.splMaxRms, r.splPeak);
+    const float maxRms = plausible(r.splMaxRms) ? r.splMaxRms : 0.0f;
+    const float peak = plausible(r.splPeak) ? r.splPeak : 0.0f;
+    snprintf(buf, sizeof(buf), "max %5.1f  peak %5.1f", maxRms, peak);
     tft.drawString(buf, 312, 112, 2);
 
     // Statuszeile
     tft.setTextDatum(TL_DATUM);
     tft.setTextColor(r.pressurePlausible ? kDim : kWarn, kBg);
-    snprintf(buf, sizeof(buf), "%s Hz  %.0f/s  %s  %d%%", r.band, g_fs,
-             g_sensorAddr < 0 ? "DEMO" : "BMP581", g_backlight);
-    tft.drawString(buf, 8, 224, 2);
+    char mode[16];
+    if (!g_demoMode) {
+        snprintf(mode, sizeof(mode), "BMP581");
+    } else if (g_sensorAddr >= 0) {
+        // Sensor da, Treiber noch nicht -- beides anzeigen, damit nicht der
+        // Eindruck entsteht, der Sensor fehle.
+        snprintf(mode, sizeof(mode), "DEMO 0x%02X", g_sensorAddr);
+    } else {
+        snprintf(mode, sizeof(mode), "DEMO");
+    }
+    snprintf(buf, sizeof(buf), "%s Hz  %.0f/s  %s  %d%%", r.band, g_fs, mode,
+             g_backlight);
+    tft.drawString(buf, 8, kStatusY, 2);
 }
 
 // ---------------------------------------------------------------- Tasks
@@ -185,7 +233,7 @@ void sensorTask(void*) {
     uint32_t prevUs = micros();
 
     for (;;) {
-        if (g_sensorAddr >= 0) {
+        if (!g_demoMode) {
             // TODO(Phase 2): FIFO-Burst lesen, Overrun-Flag auswerten, jeden
             // Wert durch g_meter.process(pa) schicken.
         } else {
@@ -245,11 +293,17 @@ void setup() {
     splash("Bass-SPL-Meter", "Sensor wird gesucht", TFT_WHITE);
     g_sensorAddr = findSensor();
 
+    g_demoMode = !(g_sensorAddr >= 0 && kSensorDriverReady);
+
     if (g_sensorAddr >= 0) {
-        Serial.printf("BMP581 auf 0x%02X gefunden\n", g_sensorAddr);
+        Serial.printf("BMP581 auf 0x%02X gefunden%s\n", g_sensorAddr,
+                      g_demoMode ? ", Treiber fehlt noch -> Demobetrieb" : "");
         // TODO(Phase 2): Continuous Mode, Oversampling 1x, IIR auf Bypass,
-        // FIFO einschalten, dann die Abtastrate ueber 30 s messen.
-        splash("BMP581 gefunden", "Treiber folgt in Phase 2", TFT_GREEN);
+        // FIFO einschalten, dann die Abtastrate ueber 30 s messen. Danach
+        // kSensorDriverReady auf true setzen.
+        splash(g_demoMode ? "BMP581 erkannt" : "BMP581 aktiv",
+               g_demoMode ? "Treiber folgt - laeuft im Demobetrieb" : nullptr,
+               TFT_GREEN);
     } else {
         Serial.println("Kein Sensor gefunden, Demobetrieb");
         splash("Kein Sensor", "Demobetrieb mit Testsignal", TFT_ORANGE);
@@ -275,7 +329,7 @@ void loop() {
         last = millis();
         const vu::Report r = g_meter.report();
         Serial.printf("%s  %6.1f dB  f0 %6.2f Hz  peak %6.1f  roh %.0f Pa  n=%lu\n",
-                      g_sensorAddr < 0 ? "DEMO" : "BMP", r.splSlow, r.f0,
+                      g_demoMode ? "DEMO" : "BMP", r.splSlow, r.f0,
                       r.splPeak, r.rawPressurePa,
                       static_cast<unsigned long>(g_samples));
     }

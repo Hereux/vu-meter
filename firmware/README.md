@@ -71,6 +71,12 @@ in der Kette oder am Timing nicht — das ist der eigentliche Zweck.
 Die Sensorerkennung liest nur die Chip-ID (0x50) auf 0x47 bzw. 0x46. Dafür
 braucht es keine Herstellerbibliothek; der richtige Treiber kommt in Phase 2.
 
+**Solange `kSensorDriverReady` in `src/main.cpp` auf `false` steht, läuft der
+Demobetrieb auch bei erkanntem Sensor weiter.** Sonst speiste niemand Messwerte
+ein und die Anzeige stünde still bei −inf. Die Statuszeile zeigt dann
+`DEMO 0x47`: Sensor erkannt, Treiber noch nicht da. Phase 2 setzt den Schalter
+auf `true`.
+
 Bleibt das Display dunkel: die serielle Ausgabe alle 5 s zeigt dieselben Werte.
 Kommt dort etwas an, läuft die Firmware und nur die Display-Konfiguration
 stimmt nicht.

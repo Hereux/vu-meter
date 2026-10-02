@@ -39,7 +39,9 @@ Drei Befunde, die in die Firmware einfließen:
 - [x] 2.0 CI baut die ESP32-Firmware (`.github/workflows/ci.yml`) und legt die Binärdateien als Artefakt ab. Bis dahin war `main.cpp` nie übersetzt worden — meine Arbeitsumgebung sperrt die PlatformIO-Registry. **Erster Lauf grün**, alle fünf Jobs: RAM 15,0 %, Flash 25,4 %, Bauzeit 48 s.
 - [x] 2.0a Demobetrieb ohne Sensor: synthetischer Sweep durch die echte Messkette, Anzeige auf dem TFT. Prüfbar mit dem Board allein.
 - [x] 2.1 Firmware geflasht, Anzeige läuft. **Befund:** Bild korrekt, Beleuchtung aus — I²C lag auf GPIO 21, dem Backlight-Pin. Behoben: I²C auf 27/22, Beleuchtung per PWM regelbar, zwei `static_assert` gegen eine Wiederholung.
-- [ ] 2.1a Nachprüfen: Beleuchtung an, Helligkeit in der Statuszeile, Pegel weiterhin 150,0 dB und Sweep 20 → 80 Hz.
+- [x] 2.1a Beleuchtung an, Anzeige läuft. **Zwei Befunde am Gerät:** das Spektrum überlappte die Statuszeile um 4 px (Layout jetzt aus der Bildschirmhöhe abgeleitet, mit `static_assert`), und bei erkanntem Sensor stand die Anzeige still, weil der Treiber fehlt.
+- [x] 2.1b **Sensor am I²C erkannt** (Chip-ID 0x50). Solange der Treiber fehlt, läuft der Demobetrieb weiter und die Statuszeile zeigt `DEMO 0x47` — Sensor da, Treiber nicht.
+- [ ] 2.1c Nachprüfen am Gerät: Statuszeile vollständig sichtbar, Spektrum endet darüber.
 - [ ] 2.2 BMP581 per I²C anbinden, Chip-ID lesen, Absolutdruck plausibel (800-1100 hPa)?
 - [ ] 2.3 Continuous Mode, OSR 1x, IIR aus, FIFO aktivieren.
 - [ ] 2.4 FIFO-Burst-Read alle 40 ms, Overrun-Flag auswerten.
