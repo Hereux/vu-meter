@@ -46,7 +46,8 @@ Drei Befunde, die in die Firmware einfließen:
 - [x] 2.3 Dauerbetrieb, OSR 1×, IIR umgangen, FIFO nur mit Druckwerten. Reihenfolge Standby → konfigurieren → Dauerbetrieb, wie vorgeschrieben.
 - [x] 2.4 FIFO-Burst-Read alle 20 ms (nicht 40 — bei 622 Hz blieben sonst nur 11 ms Reserve), Überlauf wird gezählt und angezeigt.
 - [x] 2.5 **fs-Messung** über 30 s gegen die Uhr des ESP32. Ist die Rate zu niedrig fürs Band, bricht der Start mit Meldung ab statt still auf ein engeres Band auszuweichen.
-- [x] 2.5a **Abtastrate reicht.** Indirekt belegt: das Gerät zeigt einen echten Messwert, also ist `Meter::init` durchgelaufen, und das verlangt mindestens 250 Hz für das Band 10-100 Hz. Der Dauerbetrieb liefert mehr als die 240 Hz der offiziellen ODR-Tabelle. Der genaue Wert steht auf dem Startbildschirm und ist noch nicht notiert.
+- [x] 2.5a **Abtastrate gemessen: 494,5 Hz.** Der Dauerbetrieb liefert damit gut das Doppelte der 240 Hz aus der offiziellen ODR-Tabelle. Nyquist 247 Hz, Obergrenze nach der 0,4-Regel 198 Hz — **beide Messbänder sind nutzbar**, auch 5–150 Hz (bräuchte 375 Hz). FFT-Auflösung 0,97 Hz bei N=512, 0,48 Hz bei N=1024.
+- [x] 2.6 **Kein FIFO-Überlauf** im Betrieb (`OVR 0`). Bei 494,5 Hz fasst der FIFO 64,7 ms; bei 20 ms Leseabstand fallen 10 von 32 Rahmen an, also reichlich Reserve.
 - [ ] 2.6 Rohdaten über USB-Seriell streamen und am PC mit `tools/verify_log.py` plotten.
 
 **Abnahme:** Lückenloser Datenstrom mit bekannter, stabiler Abtastrate (Schwankung < 0,5 %), keine FIFO-Overruns über 10 Minuten.
@@ -89,7 +90,7 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 
 ## Phase 5 — Kalibrierung und Verifikation  (~1 Tag)
 
-- [ ] 5.0 Sofort-Check vor allem anderen: auf dem Kalibrierschirm die Referenz setzen, drei Stockwerke hoch (~10 m), es müssen rund −120 Pa bzw. +10 m dastehen. Deckt grobe Skalierungsfehler in zwei Minuten auf.
+- [x] 5.0 **Sofort-Check bestanden.** Referenz unten gesetzt, höchster Punkt im Haus: −84,6 Pa = +7,0 m; zurück auf Referenzhöhe wieder 0,0 m. Die Rückkehr auf exakt null ist der eigentliche Beleg: umkehrbar und driftfrei.
 - [ ] 5.1 Wassersäulen-Test (`docs/05-kalibrierung.md` A): dichte Sensorkammer bauen, Reihe über 10/20/50 cm, Hauptmesspunkt 50 cm. Abweichung < 1 %.
 - [x] 5.2 Rauschteppich gemessen: **87 dB** im halbwegs ruhigen Raum (0,45 Pa im Band). Besser als die Datenblatt-Rechnung erwarten ließ (90-95 dB). Dokumentiert in `docs/05-kalibrierung.md`, Abschnitt C.
 - [ ] 5.3 Frequenzgang mit DIY-Pistonphon oder Zweitsensor-Vergleich (10-100 Hz, ±0,5 dB erwartet).

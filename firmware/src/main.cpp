@@ -44,8 +44,11 @@ volatile float g_tempC = 0.0f;
 float g_refPa = 0.0f;
 bool g_refSet = false;
 
-// Luftdruckgradient nahe dem Boden: rund 12 Pa je Meter Hoehe.
-constexpr float kPaPerMeter = 12.0f;
+// Rueckfallwert fuer den Luftdruckgradienten, falls Druck oder Temperatur
+// noch nicht plausibel sind.
+constexpr float kPaPerMeterFallback = 12.0f;
+constexpr float kRSpecificAir = 287.05f;  // J/(kg*K), trockene Luft
+constexpr float kG = 9.80665f;
 int g_sensorAddr = -1;   // -1 = kein Sensor gefunden, Demobetrieb
 uint32_t g_samples = 0;  // verarbeitete Messwerte, fuer die Statuszeile
 
@@ -277,8 +280,14 @@ void drawCalib(const vu::Report& r) {
     snprintf(buf, sizeof(buf), "%9.1f Pa ", pa);
     tft.drawString(buf, 8, 56, 2);
 
+    // Gradient aus den eigenen Messwerten statt aus einer festen Konstante:
+    // das Geraet kennt Druck und Temperatur, also laesst sich die Luftdichte
+    // ausrechnen. Bei 1006 hPa und 17,5 C sind es 11,83 statt 12,00 Pa/m --
+    // 1,5 % Unterschied, die in der Hoehenanzeige sonst stecken blieben.
+    float paPerM = (pa / (kRSpecificAir * (g_tempC + 273.15f))) * kG;
+    if (!(paPerM > 5.0f && paPerM < 20.0f)) paPerM = kPaPerMeterFallback;
+
     // Differenz zum gesetzten Bezugswert, zusaetzlich als Hoehendifferenz.
-    // 12 Pa je Meter, das macht den Stockwerktest ohne Rechnen ablesbar.
     tft.setTextColor(kDim, kBg);
     tft.drawString("DIFFERENZ ZUR REFERENZ", 8, 84, 2);
     tft.setTextColor(kAccent, kBg);
@@ -286,7 +295,7 @@ void drawCalib(const vu::Report& r) {
         const float d = pa - g_refPa;
         snprintf(buf, sizeof(buf), "%+8.1f Pa ", d);
         tft.drawString(buf, 8, 104, 4);
-        snprintf(buf, sizeof(buf), "entspricht %+5.1f m Hoehe ", -d / kPaPerMeter);
+        snprintf(buf, sizeof(buf), "entspricht %+5.1f m Hoehe ", -d / paPerM);
         tft.drawString(buf, 8, 134, 2);
     } else {
         tft.drawString("-- keine gesetzt --      ", 8, 104, 4);

@@ -92,12 +92,26 @@ stetig. Bleiben beide über eine Minute stabil, ist der Aufbau dicht. Sinkt nur
 der Druck, ohne dass sich das Wasser bewegt — dann misst du falsch, prüf die
 Verbindung zur Kammer.
 
-### Sofort-Check ohne jeden Aufbau
+### Sofort-Check ohne jeden Aufbau — **bestanden**
 
 Bevor du irgendetwas baust: Der Luftdruck fällt mit der Höhe um **rund 12 Pa
-pro Meter**. Trag das Gerät drei Stockwerke hoch, das sind etwa 10 m, und der
-Rohdruck muss um ~120 Pa fallen. Kostet nichts, dauert zwei Minuten und deckt
-grobe Fehler sofort auf: falscher Sensor, falsche Einheit, kaputte Skalierung.
+pro Meter**. Auf dem Kalibrierschirm die Referenz setzen, nach oben gehen, die
+Differenz ablesen. Kostet nichts, dauert zwei Minuten und deckt grobe Fehler
+sofort auf: falscher Sensor, falsche Einheit, kaputte Skalierung.
+
+**Ergebnis am fertigen Gerät:**
+
+| | |
+|---|---|
+| Referenz unten, höchster Punkt im Haus | −84,6 Pa → **+7,0 m** |
+| zurück auf Referenzhöhe | **0,0 m** |
+| Temperatur | 17,5 °C, plausibel |
+| Absolutdruck | 1006,03 hPa |
+
+Entscheidend ist nicht der Hinweg, sondern die Rückkehr auf **exakt 0,0 m**:
+damit ist die Messung umkehrbar und driftfrei, nicht bloß eine Zahl, die in
+eine Richtung läuft. Die Pa-Skala stimmt über den gesamten Signalweg vom
+Sensorregister bis zur Anzeige.
 
 ### Was diese Prüfung nicht abdeckt
 

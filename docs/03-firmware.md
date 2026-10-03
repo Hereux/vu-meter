@@ -135,6 +135,20 @@ Reichlich Reserve. Sensor-Task mit hoher Priorität und eigenem Kern, damit der
 Display-Refresh keine FIFO-Overruns verursacht (FIFO fasst nur 32 Werte ≈ 55 ms
 bei 580 Hz — deshalb mindestens alle 40 ms auslesen).
 
+## Am Gerät gemessen
+
+| | |
+|---|---|
+| Abtastrate im Dauerbetrieb | **494,5 Hz** (OSR 1×) |
+| FIFO-Überläufe im Betrieb | keine, bei 20 ms Leseabstand |
+| Rauschteppich, Band 10–100 Hz | 87 dB im ruhigen Raum |
+| Bin-Breite | 0,97 Hz (N=512) / 0,48 Hz (N=1024) |
+| Sinc-Korrektur bei 100 Hz | +0,59 dB |
+
+Die 494,5 Hz sind das Doppelte der höchsten Rate aus der offiziellen
+ODR-Tabelle (240 Hz) — im Dauerbetrieb wird das ODR-Feld ignoriert. Damit sind
+beide Messbänder nutzbar: die 0,4-Regel erlaubt bis 198 Hz.
+
 ## Speicherbelegung (gemessen)
 
 Aus dem CI-Build mit Demobetrieb und TFT_eSPI, also inklusive Anzeige:
