@@ -66,6 +66,19 @@ constexpr int kFftLive = 512;   // 1,21 Hz Bins bei 622 Hz, Update 4,9/s
 constexpr int kFftRta = 1024;   // 0,61 Hz Bins, Update 2,4/s
 constexpr float kClipWarnSpl = 175.0f;
 
+// ---- Messprofile ----
+// Jedes Profil buendelt Messband und Spektrumsskala. Umschaltbar per Taste.
+//
+// Zu den Skalengrenzen: der angezeigte Gesamtpegel verteilt sich auf alle
+// Bins des Bandes. Bei 86 dB Gesamtpegel und rund 93 Bins traegt ein
+// einzelner Balken nur etwa 67 dB. Eine Skala, die erst bei 85 dB beginnt,
+// bliebe im Zimmer deshalb leer -- die Untergrenze muss deutlich unter dem
+// erwarteten Gesamtpegel liegen.
+constexpr float kProfileRoomSpecMin = 50.0f;
+constexpr float kProfileRoomSpecMax = 110.0f;
+constexpr float kProfileCarSpecMin = 100.0f;
+constexpr float kProfileCarSpecMax = 170.0f;
+
 // ---- Anzeige --------------------------------------------------------------
 constexpr int kDisplayFps = 5;
 constexpr int kLongPressMs = 600;  // Peak-Reset

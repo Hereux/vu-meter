@@ -77,7 +77,7 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 
 - [ ] 4.1 Screen LIVE: große dB-Zahl, f0, Balkenspektrum 10-100 Hz.
 - [ ] 4.2 Screen PEAK/BURP: max. RMS groß, True-Peak als Nebenwert, f0 beim Maximum, Reset per langem Tastendruck.
-- [ ] 4.2a Bandumschaltung 10-100 / 5-150 Hz im Menü; Wechsel muss die Haltewerte zurücksetzen.
+- [x] 4.2a Bandumschaltung als **Messprofile** umgesetzt: RAUM (5–150 Hz, Skala 50–110 dB) und AUTO (10–100 Hz, Skala 100–170 dB), reihum per Taste. Der Wechsel läuft über den Sensor-Task, damit die Filter nicht mitten im Betrieb umgeschrieben werden; Haltewerte werden dabei zurückgesetzt.
 - [ ] 4.3 Screen RTA: 1/6-Oktav-Balken mit Max-Hold, N=1024.
 - [ ] 4.4 Statuszeile: `dB SPL (Z, 10-100 Hz)`, fs, Temperatur, OVER-/Overrun-Warnung.
 - [x] 4.4a Kalibrierschirm umgesetzt: Absolutdruck in hPa und Pa, Differenz zu einer per Tastendruck setzbaren Referenz (zusätzlich in Metern Höhe), Temperatur, gemessene Abtastrate, Sensoradresse, Überlaufzähler. Kurzer Tastendruck wechselt den Schirm, langer setzt die Referenz.

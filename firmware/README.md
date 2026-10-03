@@ -94,10 +94,33 @@ verloren gegangen — die Statuszeile zeigt dann `OVR` mit Zähler und wird
 orange. Still weiterzurechnen wäre falsch: fehlende Werte senken den
 angezeigten Pegel.
 
+## Messprofile
+
+Kurzer Druck auf den Boot-Taster (GPIO 0) schaltet reihum weiter:
+**RAUM → AUTO → Kalibrierung**.
+
+| Profil | Messband | Spektrumsskala | wofür |
+|---|---|---|---|
+| **RAUM** | 5–150 Hz | 50–110 dB | Zimmerlautstärke, Funktionsprüfung, Infraschall |
+| **AUTO** | 10–100 Hz | 100–170 dB | Fahrzeugbetrieb, vergleichbar mit Bass-Metern |
+
+Beide Bänder sind bei der gemessenen Abtastrate von 494,5 Hz zulässig — die
+0,4-Regel erlaubt bis 198 Hz.
+
+**Zur Wahl der Skalengrenzen:** der angezeigte Gesamtpegel verteilt sich auf
+alle Bins des Bandes. Bei 86 dB Gesamtpegel und rund 93 Bins trägt ein
+einzelner Balken nur etwa **67 dB**. Eine Skala ab 85 dB bliebe im Zimmer
+deshalb leer. Die Grenzen stehen in `include/config.h` und sind in einer Zeile
+änderbar; sie stehen außerdem in der Statuszeile, damit sich ein leeres
+Spektrum nicht von einem defekten unterscheiden lässt.
+
+Der Bandwechsel wird im Sensor-Task ausgeführt, nicht im Anzeige-Task: sonst
+würden die Filterkoeffizienten neu geschrieben, während gerade Messwerte
+hindurchlaufen.
+
 ## Kalibrierschirm
 
-Kurzer Druck auf den Boot-Taster (GPIO 0) wechselt zwischen Messanzeige und
-Kalibrierschirm. Dieser zeigt den **Absolutdruck vor dem DC-Blocker** — genau
+Die dritte Seite. Dieser zeigt den **Absolutdruck vor dem DC-Blocker** — genau
 die Größe, die die Prüfungen aus
 [docs/05-kalibrierung.md](../docs/05-kalibrierung.md) brauchen.
 
@@ -117,7 +140,7 @@ statt zum Rechnen: Referenz setzen, drei Stockwerke hoch, es müssen rund
 Die Umrechnung nutzt 12 Pa je Meter (Luftdichte am Boden). Das ist eine
 Näherung für den Plausibilitätstest, keine Höhenmessung.
 
-Auf der Messanzeige setzt der lange Druck stattdessen die Haltewerte zurück.
+Auf den Messseiten setzt der lange Druck stattdessen die Haltewerte zurück.
 
 ## Demobetrieb ohne Sensor
 

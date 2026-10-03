@@ -26,8 +26,31 @@ Bmp581 g_sensor;
 float g_fs = cfg::kFsNominal;
 int g_backlight = cfg::kBacklightDefault;  // Prozent
 
-enum class Screen { Live, Calib };
-Screen g_screen = Screen::Live;
+// Ein Messprofil buendelt Messband und Spektrumsskala.
+struct Profile {
+    const char* name;
+    vu::Band band;
+    float specMinDb;
+    float specMaxDb;
+};
+
+// RAUM nutzt das breite Band -- bei 494,5 Hz Abtastrate ist 5-150 Hz
+// zulaessig (0,4 * fs = 198 Hz). AUTO bleibt beim schmalen Band, damit die
+// Werte mit kommerziellen Bass-Metern vergleichbar sind.
+constexpr Profile kProfiles[] = {
+    {"RAUM", vu::Band::k5to150, cfg::kProfileRoomSpecMin, cfg::kProfileRoomSpecMax},
+    {"AUTO", vu::Band::k10to100, cfg::kProfileCarSpecMin, cfg::kProfileCarSpecMax},
+};
+constexpr int kProfileCount = sizeof(kProfiles) / sizeof(kProfiles[0]);
+constexpr int kPageCalib = kProfileCount;  // Kalibrierschirm hinter den Profilen
+
+int g_page = 1;  // Start mit AUTO
+
+// Bandwechsel wird nicht direkt ausgefuehrt: der Anzeige-Task darf die Filter
+// nicht umschreiben, waehrend der Sensor-Task Messwerte hindurchschickt.
+// Stattdessen nur ein Wunsch, den der Sensor-Task zwischen zwei Bloecken
+// umsetzt.
+volatile int g_pendingProfile = -1;
 
 bool g_demoMode = true;        // kein Sensor gefunden -> Testsignal
 bool g_fsError = false;        // gemessene Abtastrate zu niedrig fuers Band
@@ -183,7 +206,7 @@ void drawStatic() {
     tft.drawFastHLine(kSpecX, kSpecY + kSpecH, kSpecW, kDim);
 }
 
-void drawSpectrum(const vu::Meter& m) {
+void drawSpectrum(const vu::Meter& m, const Profile& prof) {
     if (!m.spectrumReady()) return;
     const vu::Spectrum& sp = m.spectrum();
     const float* mags = m.magnitudes();
@@ -198,10 +221,11 @@ void drawSpectrum(const vu::Meter& m) {
         if (k < 1) k = 1;
         if (k > sp.magCount() - 1) k = sp.magCount() - 1;
 
-        // Bin-Betrag in einen Pegel umrechnen und auf 100..170 dB abbilden
+        // Bin-Betrag in einen Pegel umrechnen und auf die Profilskala abbilden
         const float pa = 2.0f * mags[k] / (sp.size() * 0.5f) / sqrtf(2.0f);
         const float db = vu::splFromPa(pa);
-        int h = static_cast<int>((db - 100.0f) / 70.0f * kSpecH);
+        int h = static_cast<int>((db - prof.specMinDb) /
+                                 (prof.specMaxDb - prof.specMinDb) * kSpecH);
         if (h < 0) h = 0;
         if (h > kSpecH) h = kSpecH;
 
@@ -211,7 +235,7 @@ void drawSpectrum(const vu::Meter& m) {
     }
 }
 
-void drawReadings(const vu::Report& r) {
+void drawReadings(const vu::Report& r, const Profile& prof) {
     char buf[48];
 
     // Grosser Pegelwert
@@ -243,21 +267,21 @@ void drawReadings(const vu::Report& r) {
     tft.setTextDatum(TL_DATUM);
     tft.setTextColor((r.pressurePlausible && g_overruns == 0) ? kDim : kWarn,
                      kBg);
-    char mode[20];
-    if (!g_demoMode) {
-        if (g_overruns > 0) {
-            // Nicht verschweigen: bei Ueberlauf fehlen Messwerte, der
-            // angezeigte Pegel ist dann zu niedrig.
-            snprintf(mode, sizeof(mode), "BMP581 OVR%lu",
-                     static_cast<unsigned long>(g_overruns));
-        } else {
-            snprintf(mode, sizeof(mode), "BMP581 0x%02X", g_sensor.address());
-        }
-    } else {
+    char mode[16];
+    if (g_demoMode) {
         snprintf(mode, sizeof(mode), "DEMO");
+    } else if (g_overruns > 0) {
+        // Nicht verschweigen: bei Ueberlauf fehlen Messwerte, der angezeigte
+        // Pegel ist dann zu niedrig.
+        snprintf(mode, sizeof(mode), "OVR%lu",
+                 static_cast<unsigned long>(g_overruns));
+    } else {
+        mode[0] = '\0';
     }
-    snprintf(buf, sizeof(buf), "%s Hz  %.0f/s  %s  %d%%", r.band, g_fs, mode,
-             g_backlight);
+    // Die Skalengrenzen gehoeren sichtbar dazu: ohne sie laesst sich ein
+    // leeres Spektrum nicht von einem defekten unterscheiden.
+    snprintf(buf, sizeof(buf), "%s %s Hz %.0f-%.0f dB %.0f/s %s   ",
+             prof.name, r.band, prof.specMinDb, prof.specMaxDb, g_fs, mode);
     tft.drawString(buf, 8, kStatusY, 2);
 }
 
@@ -303,9 +327,9 @@ void drawCalib(const vu::Report& r) {
     }
 
     tft.setTextColor(kDim, kBg);
-    snprintf(buf, sizeof(buf), "%.1f C   %.1f Hz   0x%02X   OVR %lu  ",
+    snprintf(buf, sizeof(buf), "%.1f C  %.1f Hz  0x%02X  OVR %lu  %d%%  ",
              static_cast<double>(g_tempC), g_fs, g_sensor.address(),
-             static_cast<unsigned long>(g_overruns));
+             static_cast<unsigned long>(g_overruns), g_backlight);
     tft.drawString(buf, 8, 164, 2);
 
     tft.setTextColor(r.pressurePlausible ? kDim : kWarn, kBg);
@@ -325,6 +349,15 @@ void sensorTask(void*) {
     uint32_t prevUs = micros();
 
     for (;;) {
+        // Bandwechsel hier umsetzen, nicht im Anzeige-Task: sonst wuerden die
+        // Filterkoeffizienten neu geschrieben, waehrend gerade Messwerte
+        // hindurchlaufen.
+        const int wanted = g_pendingProfile;
+        if (wanted >= 0 && wanted < kProfileCount) {
+            g_meter.setBand(kProfiles[wanted].band);
+            g_pendingProfile = -1;
+        }
+
         if (!g_demoMode) {
             float samples[bmp581::kFifoMaxFrames];
             const int n = g_sensor.readFifo(samples, bmp581::kFifoMaxFrames);
@@ -377,7 +410,7 @@ void handleButton(const vu::Report& r) {
         if (held < 40) {
             // Prellen, ignorieren
         } else if (held >= static_cast<uint32_t>(cfg::kLongPressMs)) {
-            if (g_screen == Screen::Calib) {
+            if (g_page == kPageCalib) {
                 g_refPa = r.rawPressurePa;
                 g_refSet = true;
                 Serial.printf("Referenz gesetzt: %.1f Pa\n", g_refPa);
@@ -386,9 +419,17 @@ void handleButton(const vu::Report& r) {
                 Serial.println("Haltewerte zurueckgesetzt");
             }
         } else {
-            g_screen = (g_screen == Screen::Live) ? Screen::Calib : Screen::Live;
+            // Reihum: Profil 1, Profil 2, ..., Kalibrierschirm
+            g_page = (g_page + 1) % (kProfileCount + 1);
+            if (g_page < kProfileCount) {
+                // Der Bandwechsel geht ueber den Sensor-Task, siehe oben.
+                g_pendingProfile = g_page;
+            }
             tft.fillScreen(kBg);
-            if (g_screen == Screen::Live) drawStatic();
+            if (g_page < kProfileCount) drawStatic();
+            Serial.printf("Seite: %s\n", g_page < kProfileCount
+                                              ? kProfiles[g_page].name
+                                              : "Kalibrierung");
         }
     }
     wasDown = down;
@@ -400,9 +441,10 @@ void uiTask(void*) {
     for (;;) {
         const vu::Report r = g_meter.report();
         handleButton(r);
-        if (g_screen == Screen::Live) {
-            drawReadings(r);
-            drawSpectrum(g_meter);
+        if (g_page < kProfileCount) {
+            const Profile& prof = kProfiles[g_page];
+            drawReadings(r, prof);
+            drawSpectrum(g_meter, prof);
         } else {
             drawCalib(r);
         }
@@ -461,19 +503,19 @@ void setup() {
     }
     delay(1500);
 
-    if (!g_meter.init(g_fs, vu::Band::k10to100, cfg::kFftLive)) {
+    if (!g_meter.init(g_fs, kProfiles[g_page].band, cfg::kFftLive)) {
         // Kein stiller Rueckfall auf ein engeres Band: dann staende eine Zahl
         // auf dem Display, die etwas anderes misst als beschriftet. Lieber
         // deutlich sagen, was gemessen wurde und was noetig waere.
-        const float needed = vu::bandLimits(vu::Band::k10to100).hi /
+        const float needed = vu::bandLimits(kProfiles[g_page].band).hi /
                              vu::kMaxBandFraction;
         char line[64];
         snprintf(line, sizeof(line), "%.0f Hz gemessen, %.0f Hz noetig", g_fs,
                  needed);
         splash("Abtastrate zu niedrig", line, TFT_RED);
         Serial.printf("Meter::init fehlgeschlagen: fs=%.2f Hz, benoetigt "
-                      "mindestens %.2f Hz fuer das Band 10-100 Hz\n",
-                      g_fs, needed);
+                      "mindestens %.2f Hz fuer das Band %s Hz\n",
+                      g_fs, needed, vu::bandLimits(kProfiles[g_page].band).name);
         g_fsError = true;
         return;
     }
