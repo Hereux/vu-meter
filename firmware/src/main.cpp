@@ -26,9 +26,26 @@ Bmp581 g_sensor;
 float g_fs = cfg::kFsNominal;
 int g_backlight = cfg::kBacklightDefault;  // Prozent
 
+enum class Screen { Live, Calib };
+Screen g_screen = Screen::Live;
+
 bool g_demoMode = true;        // kein Sensor gefunden -> Testsignal
 bool g_fsError = false;        // gemessene Abtastrate zu niedrig fuers Band
 uint32_t g_overruns = 0;       // FIFO lief voll, Messwerte fehlen
+
+// Temperatur wird im Sensor-Task gelesen und hier abgelegt. Der Anzeige-Task
+// darf den I2C-Bus nicht selbst anfassen -- zwei Tasks auf demselben Bus ohne
+// Absicherung geben frueher oder spaeter vertauschte Register.
+volatile float g_tempC = 0.0f;
+
+// Bezugsdruck fuer den Kalibrierschirm. Langer Tastendruck setzt ihn auf den
+// aktuellen Wert; angezeigt wird danach die Differenz. Damit braucht weder der
+// Stockwerk- noch der Wassersaeulentest eine Nebenrechnung.
+float g_refPa = 0.0f;
+bool g_refSet = false;
+
+// Luftdruckgradient nahe dem Boden: rund 12 Pa je Meter Hoehe.
+constexpr float kPaPerMeter = 12.0f;
 int g_sensorAddr = -1;   // -1 = kein Sensor gefunden, Demobetrieb
 uint32_t g_samples = 0;  // verarbeitete Messwerte, fuer die Statuszeile
 
@@ -241,6 +258,53 @@ void drawReadings(const vu::Report& r) {
     tft.drawString(buf, 8, kStatusY, 2);
 }
 
+// Kalibrierschirm. Zeigt den Absolutdruck VOR dem DC-Blocker -- genau die
+// Groesse, die der Stockwerk- und der Wassersaeulentest aus
+// docs/05-kalibrierung.md brauchen.
+void drawCalib(const vu::Report& r) {
+    char buf[48];
+    const float pa = r.rawPressurePa;
+
+    tft.setTextColor(kDim, kBg);
+    tft.setTextDatum(TL_DATUM);
+    tft.drawString("ABSOLUTDRUCK", 8, 6, 2);
+
+    tft.setTextColor(kFg, kBg);
+    snprintf(buf, sizeof(buf), "%8.2f hPa ", pa / 100.0f);
+    tft.drawString(buf, 8, 26, 4);
+
+    tft.setTextColor(kDim, kBg);
+    snprintf(buf, sizeof(buf), "%9.1f Pa ", pa);
+    tft.drawString(buf, 8, 56, 2);
+
+    // Differenz zum gesetzten Bezugswert, zusaetzlich als Hoehendifferenz.
+    // 12 Pa je Meter, das macht den Stockwerktest ohne Rechnen ablesbar.
+    tft.setTextColor(kDim, kBg);
+    tft.drawString("DIFFERENZ ZUR REFERENZ", 8, 84, 2);
+    tft.setTextColor(kAccent, kBg);
+    if (g_refSet) {
+        const float d = pa - g_refPa;
+        snprintf(buf, sizeof(buf), "%+8.1f Pa ", d);
+        tft.drawString(buf, 8, 104, 4);
+        snprintf(buf, sizeof(buf), "entspricht %+5.1f m Hoehe ", -d / kPaPerMeter);
+        tft.drawString(buf, 8, 134, 2);
+    } else {
+        tft.drawString("-- keine gesetzt --      ", 8, 104, 4);
+        tft.drawString("                              ", 8, 134, 2);
+    }
+
+    tft.setTextColor(kDim, kBg);
+    snprintf(buf, sizeof(buf), "%.1f C   %.1f Hz   0x%02X   OVR %lu  ",
+             static_cast<double>(g_tempC), g_fs, g_sensor.address(),
+             static_cast<unsigned long>(g_overruns));
+    tft.drawString(buf, 8, 164, 2);
+
+    tft.setTextColor(r.pressurePlausible ? kDim : kWarn, kBg);
+    tft.drawString(r.pressurePlausible ? "Taste: kurz = Schirm, lang = Referenz"
+                                       : "Rohdruck unplausibel!             ",
+                   8, kStatusY, 2);
+}
+
 // ---------------------------------------------------------------- Tasks
 
 // Hohe Prioritaet, eigener Kern. Beim echten Sensor fasst der FIFO nur
@@ -263,6 +327,14 @@ void sensorTask(void*) {
                 // falsch -- die Anzeige weist es aus.
                 if (g_sensor.overrun()) ++g_overruns;
             }
+            // Temperatur selten mitlesen. Sie aendert sich langsam und der
+            // Anzeige-Task darf den Bus nicht selbst benutzen.
+            static uint32_t lastTemp = 0;
+            if (millis() - lastTemp > 1000) {
+                lastTemp = millis();
+                float t = 0.0f;
+                if (g_sensor.readTemperature(&t)) g_tempC = t;
+            }
         } else {
             // Demobetrieb: so viele Werte erzeugen, wie in der verstrichenen
             // Zeit angefallen waeren. An der echten Uhr ausgerichtet, damit
@@ -280,13 +352,51 @@ void sensorTask(void*) {
     }
 }
 
+// Taster entprellen und zwischen kurz und lang unterscheiden.
+// kurz -> Schirm wechseln, lang -> Haltewerte bzw. Referenz zuruecksetzen.
+void handleButton(const vu::Report& r) {
+    static bool wasDown = false;
+    static uint32_t downAt = 0;
+
+    const bool down = digitalRead(cfg::kButtonPin) == LOW;  // aktiv low
+    const uint32_t now = millis();
+
+    if (down && !wasDown) {
+        downAt = now;
+    } else if (!down && wasDown) {
+        const uint32_t held = now - downAt;
+        if (held < 40) {
+            // Prellen, ignorieren
+        } else if (held >= static_cast<uint32_t>(cfg::kLongPressMs)) {
+            if (g_screen == Screen::Calib) {
+                g_refPa = r.rawPressurePa;
+                g_refSet = true;
+                Serial.printf("Referenz gesetzt: %.1f Pa\n", g_refPa);
+            } else {
+                g_meter.resetHold();
+                Serial.println("Haltewerte zurueckgesetzt");
+            }
+        } else {
+            g_screen = (g_screen == Screen::Live) ? Screen::Calib : Screen::Live;
+            tft.fillScreen(kBg);
+            if (g_screen == Screen::Live) drawStatic();
+        }
+    }
+    wasDown = down;
+}
+
 void uiTask(void*) {
     const TickType_t period = pdMS_TO_TICKS(1000 / cfg::kDisplayFps);
     TickType_t last = xTaskGetTickCount();
     for (;;) {
         const vu::Report r = g_meter.report();
-        drawReadings(r);
-        drawSpectrum(g_meter);
+        handleButton(r);
+        if (g_screen == Screen::Live) {
+            drawReadings(r);
+            drawSpectrum(g_meter);
+        } else {
+            drawCalib(r);
+        }
         vTaskDelayUntil(&last, period);
     }
 }
@@ -306,6 +416,7 @@ void splash(const char* line1, const char* line2, uint16_t color) {
 
 void setup() {
     Serial.begin(115200);
+    pinMode(cfg::kButtonPin, INPUT_PULLUP);
 
     tft.init();
     tft.setRotation(1);  // Querformat, 320 x 240

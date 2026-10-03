@@ -79,7 +79,7 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 - [ ] 4.2a Bandumschaltung 10-100 / 5-150 Hz im Menü; Wechsel muss die Haltewerte zurücksetzen.
 - [ ] 4.3 Screen RTA: 1/6-Oktav-Balken mit Max-Hold, N=1024.
 - [ ] 4.4 Statuszeile: `dB SPL (Z, 10-100 Hz)`, fs, Temperatur, OVER-/Overrun-Warnung.
-- [ ] 4.4a Debug-/Kalibrierscreen: zeigt `rawPressurePa` (Absolutdruck vor dem DC-Blocker) und die Sensortemperatur. Ohne den ist der Wassersäulen-Test aus Phase 5.1 nicht durchführbar.
+- [x] 4.4a Kalibrierschirm umgesetzt: Absolutdruck in hPa und Pa, Differenz zu einer per Tastendruck setzbaren Referenz (zusätzlich in Metern Höhe), Temperatur, gemessene Abtastrate, Sensoradresse, Überlaufzähler. Kurzer Tastendruck wechselt den Schirm, langer setzt die Referenz.
 - [ ] 4.5 Modusumschaltung per Taster/Touch, Einstellungen in NVS persistent.
 - [ ] 4.6 Ablesbarkeit prüfen: aus 1,5 m Entfernung bei Tageslicht lesbar? Sonst Schriftgröße/Kontrast anpassen.
 
@@ -89,7 +89,7 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 
 ## Phase 5 — Kalibrierung und Verifikation  (~1 Tag)
 
-- [ ] 5.0 Sofort-Check vor allem anderen: Gerät 10 m höher tragen, Rohdruck muss um ~120 Pa fallen. Deckt grobe Skalierungsfehler in zwei Minuten auf.
+- [ ] 5.0 Sofort-Check vor allem anderen: auf dem Kalibrierschirm die Referenz setzen, drei Stockwerke hoch (~10 m), es müssen rund −120 Pa bzw. +10 m dastehen. Deckt grobe Skalierungsfehler in zwei Minuten auf.
 - [ ] 5.1 Wassersäulen-Test (`docs/05-kalibrierung.md` A): dichte Sensorkammer bauen, Reihe über 10/20/50 cm, Hauptmesspunkt 50 cm. Abweichung < 1 %.
 - [x] 5.2 Rauschteppich gemessen: **87 dB** im halbwegs ruhigen Raum (0,45 Pa im Band). Besser als die Datenblatt-Rechnung erwarten ließ (90-95 dB). Dokumentiert in `docs/05-kalibrierung.md`, Abschnitt C.
 - [ ] 5.3 Frequenzgang mit DIY-Pistonphon oder Zweitsensor-Vergleich (10-100 Hz, ±0,5 dB erwartet).

@@ -94,6 +94,31 @@ verloren gegangen — die Statuszeile zeigt dann `OVR` mit Zähler und wird
 orange. Still weiterzurechnen wäre falsch: fehlende Werte senken den
 angezeigten Pegel.
 
+## Kalibrierschirm
+
+Kurzer Druck auf den Boot-Taster (GPIO 0) wechselt zwischen Messanzeige und
+Kalibrierschirm. Dieser zeigt den **Absolutdruck vor dem DC-Blocker** — genau
+die Größe, die die Prüfungen aus
+[docs/05-kalibrierung.md](../docs/05-kalibrierung.md) brauchen.
+
+| Anzeige | wofür |
+|---|---|
+| Absolutdruck in hPa und Pa | Wassersäulentest, Plausibilität |
+| Differenz zur Referenz, in Pa **und in Metern Höhe** | Stockwerktest |
+| Temperatur | Einschwingen nach dem Komprimieren abwarten |
+| gemessene Abtastrate | das Ergebnis der Startmessung nachlesen |
+| Sensoradresse, Überlaufzähler | Diagnose |
+
+**Langer Druck setzt die Referenz** auf den aktuellen Wert. Danach steht die
+Differenz direkt auf dem Display — der Stockwerktest wird damit zum Ablesen
+statt zum Rechnen: Referenz setzen, drei Stockwerke hoch, es müssen rund
+−120 Pa beziehungsweise +10 m dastehen.
+
+Die Umrechnung nutzt 12 Pa je Meter (Luftdichte am Boden). Das ist eine
+Näherung für den Plausibilitätstest, keine Höhenmessung.
+
+Auf der Messanzeige setzt der lange Druck stattdessen die Haltewerte zurück.
+
 ## Demobetrieb ohne Sensor
 
 Findet die Firmware beim Start keinen BMP581, schaltet sie automatisch in den
