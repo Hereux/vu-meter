@@ -41,7 +41,8 @@ Drei Befunde, die in die Firmware einfließen:
 - [x] 2.1 Firmware geflasht, Anzeige läuft. **Befund:** Bild korrekt, Beleuchtung aus — I²C lag auf GPIO 21, dem Backlight-Pin. Behoben: I²C auf 27/22, Beleuchtung per PWM regelbar, zwei `static_assert` gegen eine Wiederholung.
 - [x] 2.1a Beleuchtung an, Anzeige läuft. **Zwei Befunde am Gerät:** das Spektrum überlappte die Statuszeile um 4 px (Layout jetzt aus der Bildschirmhöhe abgeleitet, mit `static_assert`), und bei erkanntem Sensor stand die Anzeige still, weil der Treiber fehlt.
 - [x] 2.1b **Sensor am I²C erkannt** (Chip-ID 0x50). Solange der Treiber fehlt, läuft der Demobetrieb weiter und die Statuszeile zeigt `DEMO 0x47` — Sensor da, Treiber nicht.
-- [ ] 2.1c Nachprüfen am Gerät: Statuszeile vollständig sichtbar, Spektrum endet darüber.
+- [x] 2.1c Statuszeile vollständig sichtbar, Spektrum endet darüber.
+- [x] 2.1d **Anzeigefehler behoben:** bei proportionaler Schrift blieben Reste der vorigen, breiteren Zeichenkette stehen — aus „145.43 Hz" wurde nach dem Wechsel auf „79.82 Hz" ein sichtbares „Hzz". Alle veränderlichen Felder haben jetzt feste Feldbreiten (`setTextPadding`).
 - [x] 2.2 BMP581 per I²C angebunden (`src/bmp581.{h,cpp}`), beide Adressen und beide gültigen Chip-IDs (0x50/0x51). Registerwerte aus der offiziellen Bosch-API belegt.
 - [x] 2.3 Dauerbetrieb, OSR 1×, IIR umgangen, FIFO nur mit Druckwerten. Reihenfolge Standby → konfigurieren → Dauerbetrieb, wie vorgeschrieben.
 - [x] 2.4 FIFO-Burst-Read alle 20 ms (nicht 40 — bei 622 Hz blieben sonst nur 11 ms Reserve), Überlauf wird gezählt und angezeigt.
@@ -93,7 +94,9 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 - [x] 5.0 **Sofort-Check bestanden.** Referenz unten gesetzt, höchster Punkt im Haus: −84,6 Pa = +7,0 m; zurück auf Referenzhöhe wieder 0,0 m. Die Rückkehr auf exakt null ist der eigentliche Beleg: umkehrbar und driftfrei.
 - [ ] 5.1 Wassersäulen-Test (`docs/05-kalibrierung.md` A): dichte Sensorkammer bauen, Reihe über 10/20/50 cm, Hauptmesspunkt 50 cm. Abweichung < 1 %.
 - [x] 5.2 Rauschteppich gemessen: **87 dB** im halbwegs ruhigen Raum (0,45 Pa im Band). Besser als die Datenblatt-Rechnung erwarten ließ (90-95 dB). Dokumentiert in `docs/05-kalibrierung.md`, Abschnitt C.
-- [ ] 5.3 Frequenzgang mit DIY-Pistonphon oder Zweitsensor-Vergleich (10-100 Hz, ±0,5 dB erwartet).
+- [x] 5.3a Erste Messungen im Einmachglas (Lautsprecher aufgelegt, Sensor darin): **Scheitelfaktor +3,0 bis +3,1 dB** bei 50, 60 und 80 Hz. Sollwert für einen reinen Sinus ist 3,01 dB — damit sind RMS-Detektor, True-Peak, Bandfilter und Sinc-Korrektur an echter Hardware bestätigt. Frequenzgenauigkeit bei 50/80/145 Hz innerhalb 0,3 %.
+- [ ] 5.3b **60-Hz-Punkt nachmessen.** Dort +1,55 % Abweichung, also fast genau ein FFT-Bin. Nicht die Abtastrate (die gäbe überall denselben Prozentwert), vermutlich die Quelle. Mit einem zweiten Generator gegenprüfen.
+- [ ] 5.3 Frequenzgang mit DIY-Pistonphon oder Zweitsensor-Vergleich (10-100 Hz, ±0,5 dB erwartet). Für absolute Pegel muss ΔV bekannt sein.
 - [ ] 5.4 Clipping-Grenze nachrechnen und Warnschwelle in der Firmware setzen (175 dB).
 - [ ] 5.5 `docs/kalibrierprotokoll.md` ausfüllen.
 

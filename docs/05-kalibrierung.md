@@ -120,6 +120,48 @@ ist Abschnitt B da. Und sie prüft nicht die Signalkette dahinter (Bandfilter,
 FFT, Detektoren); die ist bereits durch die 151 Tests in
 `firmware/test/test_dsp/` abgedeckt und braucht keine Hardware.
 
+## B1. Erste Messungen im Einmachglas — **Scheitelfaktor bestätigt**
+
+Lautsprecher auf ein Weckglas gelegt, Sensor darin. Das ist ein grobes
+Pistonphon: der Sensor sieht den Druck in einem geschlossenen Volumen, also
+deutlich mehr als den Freifeldpegel.
+
+| Ton | gemessen | Pegel | max | peak | **peak − max** |
+|---|---|---|---|---|---|
+| 80 Hz | 79,82 Hz | 125,7 dB | 125,8 | 128,9 | **+3,1 dB** |
+| 60 Hz | 60,93 Hz | 119,6 dB | 127,4 | 130,4 | **+3,0 dB** |
+| 50 Hz | 49,90 Hz | 117,8 dB | 127,3 | 130,4 | **+3,1 dB** |
+
+**Der Scheitelfaktor ist das Ergebnis.** Für einen reinen Sinus beträgt der
+Abstand zwischen Spitzen- und Effektivwert theoretisch exakt 3,01 dB.
+Gemessen wurden an allen drei Frequenzen 3,0 bis 3,1 dB — an echter Hardware,
+mit echtem Schall, unabhängig von jeder Simulation.
+
+Damit sind in einem Zug bestätigt: RMS-Detektor, True-Peak-Detektor,
+Bandfilter und Sinc-Korrektur. Es ist dieselbe Eigenschaft, die der
+synthetische Test in `firmware/test/` prüft — jetzt am Gerät.
+
+**Was dieser Aufbau nicht leistet:** eine absolute Kalibrierung. Dafür müsste
+das verdrängte Volumen ΔV bekannt sein (siehe Abschnitt B). Die Pegelwerte
+sind also plausibel, aber nicht rückführbar.
+
+### Frequenzgenauigkeit
+
+| Generator | gemessen | Abweichung |
+|---|---|---|
+| 50 Hz | 49,90 Hz | −0,20 % |
+| 80 Hz | 79,82 Hz | −0,23 % |
+| 145 Hz | 145,43 Hz | +0,30 % |
+| **60 Hz** | **60,93 Hz** | **+1,55 %** |
+
+Drei Punkte liegen innerhalb von 0,3 %. Der 60-Hz-Punkt fällt heraus — und
+zwar **nicht** wegen der Abtastrate: ein Fehler in fs würde bei allen Punkten
+denselben Prozentwert ergeben. Die Abweichung entspricht fast genau einem
+ganzen FFT-Bin (0,966 Hz), während die Interpolation nachweislich auf 0,02 Bin
+genau ist. Wahrscheinlichste Ursache ist die Quelle: ein Generator, der nicht
+exakt 60,00 Hz lieferte, oder ein stärkerer Nebenton im Glas. **Vor einer
+Schlussfolgerung mit einer zweiten Quelle nachmessen.**
+
 ## B. Frequenzgang mit DIY-Pistonphon (dynamisch)
 
 Bekanntes Volumen V, Lautsprecher verschiebt ΔV:

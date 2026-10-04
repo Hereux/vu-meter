@@ -235,6 +235,16 @@ void drawSpectrum(const vu::Meter& m, const Profile& prof) {
     }
 }
 
+// Feste Feldbreiten in Pixeln. Ohne sie bleiben bei proportionaler Schrift
+// Reste der vorigen, breiteren Zeichenkette stehen -- aus "145.43 Hz" wurde
+// nach dem Wechsel auf " 79.82 Hz" ein sichtbares "Hzz".
+constexpr int kPadLevel = 190;   // grosser Pegelwert, Font 7
+constexpr int kPadFreq = 170;    // Frequenz, Font 4
+constexpr int kPadHold = 210;    // max/peak, Font 2
+constexpr int kPadStatus = 300;  // Statuszeile, Font 2
+constexpr int kPadCalibBig = 260;
+constexpr int kPadCalibSmall = 300;
+
 void drawReadings(const vu::Report& r, const Profile& prof) {
     char buf[48];
 
@@ -252,7 +262,8 @@ void drawReadings(const vu::Report& r, const Profile& prof) {
     // Dominante Frequenz
     tft.setTextDatum(TL_DATUM);
     tft.setTextColor(kAccent, kBg);
-    snprintf(buf, sizeof(buf), "%6.2f Hz", r.f0);
+    tft.setTextPadding(kPadFreq);
+    snprintf(buf, sizeof(buf), "%.2f Hz", r.f0);
     tft.drawString(buf, 8, 106, 4);
 
     // Spitzenwerte
@@ -280,9 +291,11 @@ void drawReadings(const vu::Report& r, const Profile& prof) {
     }
     // Die Skalengrenzen gehoeren sichtbar dazu: ohne sie laesst sich ein
     // leeres Spektrum nicht von einem defekten unterscheiden.
-    snprintf(buf, sizeof(buf), "%s %s Hz %.0f-%.0f dB %.0f/s %s   ",
+    tft.setTextPadding(kPadStatus);
+    snprintf(buf, sizeof(buf), "%s %s Hz %.0f-%.0f dB %.0f/s %s",
              prof.name, r.band, prof.specMinDb, prof.specMaxDb, g_fs, mode);
     tft.drawString(buf, 8, kStatusY, 2);
+    tft.setTextPadding(0);
 }
 
 // Kalibrierschirm. Zeigt den Absolutdruck VOR dem DC-Blocker -- genau die
@@ -297,11 +310,13 @@ void drawCalib(const vu::Report& r) {
     tft.drawString("ABSOLUTDRUCK", 8, 6, 2);
 
     tft.setTextColor(kFg, kBg);
-    snprintf(buf, sizeof(buf), "%8.2f hPa ", pa / 100.0f);
+    tft.setTextPadding(kPadCalibBig);
+    snprintf(buf, sizeof(buf), "%.2f hPa", pa / 100.0f);
     tft.drawString(buf, 8, 26, 4);
 
     tft.setTextColor(kDim, kBg);
-    snprintf(buf, sizeof(buf), "%9.1f Pa ", pa);
+    tft.setTextPadding(kPadCalibSmall);
+    snprintf(buf, sizeof(buf), "%.1f Pa", pa);
     tft.drawString(buf, 8, 56, 2);
 
     // Gradient aus den eigenen Messwerten statt aus einer festen Konstante:
@@ -317,25 +332,31 @@ void drawCalib(const vu::Report& r) {
     tft.setTextColor(kAccent, kBg);
     if (g_refSet) {
         const float d = pa - g_refPa;
-        snprintf(buf, sizeof(buf), "%+8.1f Pa ", d);
+        tft.setTextPadding(kPadCalibBig);
+        snprintf(buf, sizeof(buf), "%+.1f Pa", d);
         tft.drawString(buf, 8, 104, 4);
-        snprintf(buf, sizeof(buf), "entspricht %+5.1f m Hoehe ", -d / paPerM);
+        tft.setTextPadding(kPadCalibSmall);
+        snprintf(buf, sizeof(buf), "entspricht %+.1f m Hoehe", -d / paPerM);
         tft.drawString(buf, 8, 134, 2);
     } else {
-        tft.drawString("-- keine gesetzt --      ", 8, 104, 4);
-        tft.drawString("                              ", 8, 134, 2);
+        tft.setTextPadding(kPadCalibBig);
+        tft.drawString("-- keine gesetzt --", 8, 104, 4);
+        tft.setTextPadding(kPadCalibSmall);
+        tft.drawString("", 8, 134, 2);
     }
 
     tft.setTextColor(kDim, kBg);
     snprintf(buf, sizeof(buf), "%.1f C  %.1f Hz  0x%02X  OVR %lu  %d%%  ",
              static_cast<double>(g_tempC), g_fs, g_sensor.address(),
              static_cast<unsigned long>(g_overruns), g_backlight);
+    tft.setTextPadding(kPadCalibSmall);
     tft.drawString(buf, 8, 164, 2);
 
     tft.setTextColor(r.pressurePlausible ? kDim : kWarn, kBg);
     tft.drawString(r.pressurePlausible ? "Taste: kurz = Schirm, lang = Referenz"
                                        : "Rohdruck unplausibel!             ",
                    8, kStatusY, 2);
+    tft.setTextPadding(0);
 }
 
 // ---------------------------------------------------------------- Tasks
