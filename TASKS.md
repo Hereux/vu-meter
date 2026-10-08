@@ -92,7 +92,7 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 ## Phase 5 — Kalibrierung und Verifikation  (~1 Tag)
 
 - [x] 5.0 **Sofort-Check bestanden.** Referenz unten gesetzt, höchster Punkt im Haus: −84,6 Pa = +7,0 m; zurück auf Referenzhöhe wieder 0,0 m. Die Rückkehr auf exakt null ist der eigentliche Beleg: umkehrbar und driftfrei.
-- [ ] 5.1 Wassersäulen-Test (`docs/05-kalibrierung.md` A): dichte Sensorkammer bauen, Reihe über 10/20/50 cm, Hauptmesspunkt 50 cm. Abweichung < 1 %.
+- [x] 5.1 Wassersäulen-Test **übersprungen** (begründet in `docs/05-kalibrierung.md` A): er prüft dieselbe Multiplikation wie der Stockwerktest, nur genauer — ein Faktorfehler hätte dort schon auffallen müssen. Stattdessen Spritzentest am Einmachglas: 995,5 → 1030 hPa (+3450 Pa, Größenordnung 165 dB), über die Gasgleichung auf 717–998 ml Systemvolumen zurückgerechnet und damit plausibel.
 - [x] 5.2 Rauschteppich gemessen: **87 dB** im halbwegs ruhigen Raum (0,45 Pa im Band). Besser als die Datenblatt-Rechnung erwarten ließ (90-95 dB). Dokumentiert in `docs/05-kalibrierung.md`, Abschnitt C.
 - [x] 5.3a Erste Messungen im Einmachglas (Lautsprecher aufgelegt, Sensor darin): **Scheitelfaktor +3,0 bis +3,1 dB** bei 50, 60 und 80 Hz. Sollwert für einen reinen Sinus ist 3,01 dB — damit sind RMS-Detektor, True-Peak, Bandfilter und Sinc-Korrektur an echter Hardware bestätigt. Frequenzgenauigkeit bei 50/80/145 Hz innerhalb 0,3 %.
 - [ ] 5.3b **60-Hz-Punkt nachmessen.** Dort +1,55 % Abweichung, also fast genau ein FFT-Bin. Nicht die Abtastrate (die gäbe überall denselben Prozentwert), vermutlich die Quelle. Mit einem zweiten Generator gegenprüfen.

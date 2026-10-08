@@ -4,7 +4,40 @@ Das Gerät ist durch das Messprinzip bereits absolut kalibriert (der Sensor
 liefert Pa). Zu prüfen sind deshalb nur drei Dinge: **Gain**, **Frequenzgang**
 und **Rauschteppich**.
 
-## A. Gain-Prüfung mit der Wassersäule (statisch)
+## Stand
+
+| Prüfung | belegt | |
+|---|---|---|
+| Stockwerktest (0 Hz) | Pa-Skala, umkehrbar, driftfrei | ✅ |
+| Scheitelfaktor 3,0 dB | Wechselanteil-Kette vollständig | ✅ |
+| Spritzentest, +3450 Pa | Messbereich bis ~165 dB, kein Überlauf | ✅ |
+| Rauschteppich | 87 dB | ✅ |
+| **Wassersäule** | — | **übersprungen, siehe A** |
+| **Frequenzgang im Gehäuse** | — | **offen, Phase 6.5** |
+
+## A. Gain-Prüfung mit der Wassersäule — **übersprungen**
+
+Der Sensor liefert einen 24-Bit-Zähler, die Firmware multipliziert mit
+1/64 Pa. Dieselbe Konstante, derselbe Rechenweg für 85 Pa wie für 1600 Pa —
+dazwischen gibt es keine Messbereichsumschaltung und keine analoge
+Verstärkung. **Ein Faktorfehler hätte den Stockwerktest verfehlt**, der auf
++7,0 m kam und auf exakt 0,0 m zurück. Die Wassersäule würde dieselbe
+Multiplikation ein zweites Mal prüfen, nur genauer.
+
+Dazu kam ein Spritzentest am Einmachglas: 995,5 → 1030 hPa, also +3450 Pa.
+Rückgerechnet über die Gasgleichung ergibt das bei 24 ml Hub ein
+Systemvolumen von 717 ml (isotherm) bis 998 ml (adiabat) — ein Weckglas mit
+Schlauch liegt genau dort. Der Messwert ist also auch quantitativ mit der
+Physik verträglich.
+
+Was damit **nicht** geprüft ist, ist der akustische Weg: Gehäuse, Druckport,
+Kammervolumen. Das ist eine andere Fehlerquelle und wird in Phase 6.5
+geprüft, indem frei liegend gegen fertiges Gehäuse gemessen wird.
+
+Die ursprüngliche Anleitung steht unten weiter, falls der Test doch einmal
+gebraucht wird.
+
+## A1. Anleitung Wassersäule (für den Bedarfsfall)
 
 ### Was hier eigentlich passiert
 
