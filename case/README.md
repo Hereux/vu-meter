@@ -3,16 +3,37 @@
 Parametrisches OpenSCAD-Modell. Alle Maße stehen in `params.scad` — das ist
 die einzige Datei, die du anfassen musst.
 
-## ⚠️ Zuerst lesen: die Maße sind nicht verifiziert
+## Maße: gemessen
 
-Die mit `MESSEN` markierten Werte in `params.scad` sind **plausible
-Startwerte, keine gemessenen**. Die im Netz auffindbaren Angaben zum
-ESP32-2432S028R widersprechen sich (78 × 42 mm gegen 102 × 68 mm), und die dort
-genannte Displayfläche passt rechnerisch nicht zu 2,8" Diagonale: bei 320 × 240
-im Format 4:3 ergeben sich 56,9 × 42,7 mm aktive Fläche.
+Die Werte in `params.scad` stammen aus Messungen am echten Board.
+**104,8 × 90,0 × 18,2 mm.**
 
-Ich konnte das nicht auflösen — die Shop- und Datenblattseiten sind aus meiner
-Arbeitsumgebung nicht erreichbar. Also: **nachmessen, bevor du druckst.**
+Zwei Punkte sind noch offen:
+
+- **Vorzeichen von `usb_off`.** Aus 19 bzw. 22 mm Randabstand ergibt sich ein
+  Versatz von 1,5 mm aus der Mitte. Ob −1,5 oder +1,5 hängt davon ab, welche
+  Kante im Modell unten liegt. Die Passungslehre zeigt es.
+- **`insert_d` / `insert_h`**, solange keine Gewindeeinsätze da sind — siehe
+  unten.
+
+### Drei Werte habe ich interpretiert
+
+| Wert | deine Angabe | eingetragen | warum |
+|---|---|---|---|
+| `win_off_l` | 8,5 „beidseitig" | **0** | 8,5 ist der *Rand* je Seite, nicht der Versatz. 68 auf 86 mm heißt 9 mm Rand beidseitig — also mittig. |
+| `win_w` | 50 „gleichbreit wie Platine" | **48** | Bündig mit der Platinenkante sieht man bei jeder Montagetoleranz den Spalt zur Kavitätswand. 1 mm Überlappung je Seite verdeckt das. |
+| `usb_off`, `sd_off` | „berechnen" | **−1,5 / −4,5** | Aus deinen Randabständen ausgerechnet, Rechenweg oben. |
+
+## Verschraubung: mit oder ohne Gewindeeinsätze
+
+`use_inserts` in `params.scad` schaltet um:
+
+- **`false`** (aktuell): schmales Kernloch von 2,5 mm über die volle Pfeilerhöhe.
+  Eine selbstschneidende M3 zieht sich ihr Gewinde selbst. Reicht für den
+  Anfang, verträgt aber nur wenige Öffnungszyklen.
+- **`true`**: kurzes weites Loch zum Einschmelzen der Einsätze. Hält deutlich
+  besser und ist bei Vibration im Fahrzeug die richtige Wahl — nachrüsten,
+  sobald welche da sind.
 
 ## Ablauf, der Fehldrucke vermeidet
 

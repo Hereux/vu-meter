@@ -16,12 +16,17 @@ part = "assembly";
 
 // Pfeiler mit Loch fuer den Gewindeeinsatz, an frei waehlbaren Stellen.
 module post(x, y, h) {
+    // Mit Gewindeeinsatz: kurzes, weites Loch zum Einschmelzen.
+    // Ohne: schmales Kernloch ueber fast die ganze Hoehe, in das eine
+    // selbstschneidende M3 ihr Gewinde zieht.
+    hole_d = use_inserts ? insert_d : screw_pilot_d;
+    hole_h = use_inserts ? insert_h + 1 : h - 2;
     translate([x, y, 0])
         difference() {
             translate([0, 0, h/2])
                 cube([corner_col, corner_col, h], center = true);
-            translate([0, 0, h - insert_h])
-                cylinder(d = insert_d, h = insert_h + 1);
+            translate([0, 0, h - hole_h + 1])
+                cylinder(d = hole_d, h = hole_h);
         }
 }
 

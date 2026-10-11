@@ -108,9 +108,11 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 
 - [x] 6.1 OpenSCAD-Modell erstellt (`case/`): Rückschale, Frontblende, Kalibrierkammer, Passungslehre, 1:1-Papiervorlage. Alle STLs als manifold geprüft.
 - [x] 6.1b **Umbau nach Rückmeldung:** Sensorkammer vom Pod auf der Rückseite in einen abgetrennten Streifen oben verlegt (Gewichtsverteilung, Ablegbarkeit, Bruchgefahr), seitlicher Taster in der Stirnwand ergänzt. Neu 103,6 × 98,2 × 17,0 mm.
-- [ ] 6.1c **Vorher entscheiden:** 98 mm Breite kommen vom 1-Zoll-Sensorboard. Mit der Micro-Variante wären es 83,8 mm, mit einem 6-mm-Taster statt 12 mm nur 12 statt 17 mm Höhe.
+- [ ] 6.1c **Noch zu entscheiden:** die 18,2 mm Höhe kommen allein von der 12,2-mm-Tasterbohrung — der Platinenstapel braucht nur 13,0 mm. Ein 6-mm-Taster mit gedruckter Kappe spart 5,2 mm.
+- [x] 6.1f Verschraubung umschaltbar (`use_inserts`): ohne Gewindeeinsätze 2,5-mm-Kernloch für selbstschneidende M3, mit Einsätzen das weite Loch zum Einschmelzen.
 - [ ] 6.1d Inline-Gehäuse für die Stromversorgung — über der Platine bleiben nur 5 mm, ein DC/DC-Modul braucht rund 10.
-- [ ] 6.1a **Platine vermessen** und die `MESSEN`-Werte in `case/params.scad` eintragen. Die Startwerte sind geraten — die Netzangaben zum Board widersprechen sich.
+- [x] 6.1a **Platine vermessen**, Werte in `case/params.scad` eingetragen. Gehäuse damit 104,8 × 90,0 × 18,2 mm. Drei Angaben interpretiert (Fensterversatz, Fensterbreite, USB-/SD-Versatz aus Randabständen berechnet), begründet in `case/README.md`.
+- [ ] 6.1e Vorzeichen von `usb_off` an der Passungslehre prüfen (−1,5 oder +1,5).
 - [ ] 6.2 Papiervorlage bei 100 % ausdrucken, Platine drauflegen. Dann Passungslehre drucken (`make -C case fit`, ~15 min), erst danach das Gehäuse (~6 h).
 - [ ] 6.3 Vollständiger Druck in ASA/PETG, Gewindeeinsätze einschmelzen.
 - [ ] 6.4 Montage, Sensor auf Moosgummi entkoppeln, Schaumstoff über den Port.

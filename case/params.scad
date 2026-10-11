@@ -1,47 +1,58 @@
 // Alle Masse des Projekts an einer Stelle.
 //
-// ============================ ACHTUNG ============================
-// Die mit MESSEN markierten Werte sind NICHT verifiziert. Die im Netz
-// auffindbaren Angaben zum ESP32-2432S028R widersprechen sich (78x42 mm
-// gegen 102x68 mm, und die dort genannte Displayflaeche passt rechnerisch
-// nicht zu 2,8" Diagonale). Sie sind hier als plausible Startwerte
-// eingetragen, damit das Modell rechnet -- nicht, weil sie stimmen.
+// Die Werte stammen aus Messungen am echten Board, nicht mehr aus
+// widerspruechlichen Netzangaben. Offen sind nur noch:
+//   - Vorzeichen von usb_off (welche Kante im Modell unten liegt)
+//   - insert_d / insert_h, solange keine Gewindeeinsaetze da sind
 //
-// Vor dem ersten grossen Druck: Board mit dem Messschieber vermessen,
-// die Werte hier eintragen, dann case/fit_test.scad drucken (ca. 15 min).
-// Erst wenn der passt, das Gehaeuse drucken (ca. 6 h).
-// =================================================================
+// Vor dem grossen Druck trotzdem case/fit_test.scad drucken (ca. 15 min).
+// Erst wenn der passt, das Gehaeuse (ca. 5 h).
 
 // ---- Leiterplatte ESP32-2432S028R ----
 pcb_l          = 86.0;  // MESSEN: Laenge
 pcb_w          = 50.0;  // MESSEN: Breite
 pcb_t          =  1.6;  // MESSEN: Dicke
-pcb_top_h      =  5.0;  // MESSEN: hoechstes Bauteil ueber der Platine (Displayrahmen)
-pcb_bot_h      =  3.0;  // MESSEN: hoechstes Bauteil unter der Platine
+pcb_top_h      = 4.0;   // gemessen: Display, hoechstes Bauteil oben
+pcb_bot_h      = 5.0;   // gemessen: Steckkontakt Lautsprecher, mit Toleranz
 
 // ---- Sichtfenster des Displays ----
 // 2,8" bei 320x240 (4:3) ergibt rechnerisch 56,9 x 42,7 mm aktive Flaeche.
-win_l          = 58.0;  // MESSEN: Fensterlaenge (etwas groesser als aktiv)
-win_w          = 44.0;  // MESSEN: Fensterbreite
-win_off_l      =  0.0;  // MESSEN: Versatz des Fensters zur Platinenmitte, Laengsrichtung
+win_l          = 68.0;      // gemessen
+win_w          = 48.0;      // gemessen waren 50 = volle Platinenbreite. Hier 2 mm
+                        // schmaler: bei buendigem Fenster sieht man bei jeder
+                        // Montagetoleranz den Spalt zur Kavitaetswand.
+win_off_l      = 0.0;      // Dein Wert 8,5 war der RAND je Seite, nicht der
+                        // Versatz. 68 auf 86 mm ergibt 9 mm Rand beidseitig,
+                        // also mittig: Versatz 0.
 win_off_w      =  0.0;  // MESSEN: Versatz quer
 
 // ---- Ausschnitte in den Seitenwaenden ----
-usb_w          = 12.0;  // MESSEN: Breite USB-Buchse
-usb_h          =  6.0;  // MESSEN: Hoehe
-usb_off        =  0.0;  // MESSEN: Versatz aus der Mitte
-sd_w           = 15.0;  // MESSEN: microSD-Schlitz
-sd_h           =  3.0;
-sd_off         = -15.0; // MESSEN: Versatz des SD-Schlitzes aus der Mitte
+usb_w          = 9.0;       // gemessen USB-C, Toleranz im Modell ueber gap
+usb_h          = 3.0;       // gemessen
+usb_off        = -1.5;     // aus 19/22 mm Randabstand: Mitte 23,5 statt 25.
+                        // Vorzeichen pruefen -- +1,5, falls die 22er-Kante
+                        // im Modell unten liegt (Seite mit dem SD-Schlitz).
+sd_w           = 15.0;      // gemessen
+sd_h           = 2.0;       // gemessen
+sd_off         = -4.5;     // beginnt 31 mm von der USB-Stirnseite, Breite 15,
+                        // Mitte also 38,5 von 86 -> 4,5 mm Richtung USB
 
 // ---- Gehaeuse ----
-wall           =  2.4;  // Wandstaerke. 3 Perimeter bei 0,4 mm Duese + Reserve
+wall           = 3.0;        // Wandstaerke, bewusst stabiler als noetig
 gap            =  0.4;  // Spiel rund um die Platine
 floor_t        =  2.4;
 bezel_t        =  2.4;
 pcb_rest       =  2.0;  // Breite der Auflageleisten unter der Platine
 corner_col     =  6.0;  // Kantenlaenge der Eckpfeiler
-insert_d       =  4.2;  // MESSEN: Aussendurchmesser der Gewindeeinsaetze M3
+// Verschraubung: mit Gewindeeinsaetzen oder direkt selbstschneidend.
+// Einsaetze halten deutlich besser und vertragen mehrfaches Oeffnen;
+// direkt ins Material geschraubt reicht fuer den Anfang.
+use_inserts    = false;  // auf true, sobald Einsaetze da sind
+screw_pilot_d  =  2.5;   // Kernloch fuer selbstschneidende M3 in PETG/ASA
+
+insert_d       = 4.2;       // OFFEN: noch keine Gewindeeinsaetze vorhanden.
+                        // Ohne sie halten die Schrauben nicht -- siehe
+                        // case/README.md, Abschnitt Verschraubung.
 insert_h       =  5.0;  // MESSEN: Laenge
 screw_d        =  3.2;  // Durchgangsloch M3
 screw_head_d   =  6.0;  // Senkung
@@ -58,8 +69,8 @@ vent_slot_n    =  5;
 // Elektronik, nicht als Beule auf der Rueckseite. Ein abstehender Pod
 // verlagert das Gewicht nach hinten, laesst sich nicht ablegen und bricht
 // als erstes ab.
-sensor_pcb_l   = 25.4;  // MESSEN: Breakout, SparkFun Qwiic = 1 Zoll
-sensor_pcb_w   = 25.4;  // MESSEN. Die Micro-Variante ist viel kleiner und
+sensor_pcb_l   = 19.0;    // gemessen: DFRobot-Platine
+sensor_pcb_w   = 16.0;    // gemessen
                         // wuerde das Gehaeuse um rund 14 mm schrumpfen.
 divider_t      =  2.4;  // Trennwand zwischen Kammer und Elektronik
 foam_t         =  2.0;  // Moosgummi zur Entkopplung
