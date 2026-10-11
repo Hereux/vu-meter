@@ -124,11 +124,13 @@ out_w  = wall + elec_cav_w + divider_t + cham_cav_w + wall;
 elec_cy = -out_w/2 + wall + elec_cav_w/2;
 cham_cy =  out_w/2 - wall - cham_cav_w/2;
 
+// Hoehe muss die Tasterbohrung aufnehmen, sonst bleibt rund um sie keine
+// Wand stehen. Muss VOR press_h stehen: OpenSCAD loest Variablen in der
+// Reihenfolge der Datei auf und meldet sonst nur eine Warnung, waehrend der
+// Wert still undefiniert bleibt.
+out_h  = max(floor_t + cav_h, btn_d + 2*wall);
+
 // Die Pads reichen von der Blendenunterseite bis knapp auf die Platine.
 // Sie haengen an out_h, nicht an der Platinenhoehe -- sonst erreichen sie die
 // Platine nicht mehr, sobald das Gehaeuse wegen des Tasters hoeher wird.
 press_h = out_h - (floor_t + pcb_bot_h + pcb_t) - 0.3;
-
-// Hoehe muss die Tasterbohrung aufnehmen, sonst bleibt rund um sie keine
-// Wand stehen.
-out_h  = max(floor_t + cav_h, btn_d + 2*wall);

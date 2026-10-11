@@ -31,7 +31,8 @@ $(STL)/fit_test.stl: fit_test.scad case.scad params.scad | $(STL)
 fit: $(STL)/fit_test.stl
 	@echo "Passungslehre gebaut: $(STL)/fit_test.stl -- die zuerst drucken."
 
-img: | $(IMG)
+img:
+	@mkdir -p $(IMG)
 	$(RENDER) --viewall --autocenter -o $(IMG)/back.png -D 'part="back"' case.scad
 	$(RENDER) --camera=0,0,0,125,0,35,300 -o $(IMG)/back_bottom.png -D 'part="back"' case.scad
 	$(RENDER) --camera=0,0,0,125,0,35,220 -o $(IMG)/bezel.png -D 'part="bezel"' case.scad
@@ -39,10 +40,11 @@ img: | $(IMG)
 	$(RENDER) --viewall --autocenter -o $(IMG)/fit_test.png fit_test.scad
 	$(RENDER) --viewall --autocenter -o $(IMG)/cal_chamber.png sensor_chamber.scad
 
-drawing: | $(IMG)
+drawing:
+	@mkdir -p $(IMG)
 	$(SCAD) -o $(IMG)/template.svg drawing.scad
 
-$(STL) $(IMG):
+$(STL):
 	@mkdir -p $@
 
 clean:

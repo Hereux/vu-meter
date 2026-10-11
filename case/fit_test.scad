@@ -19,5 +19,5 @@ slab = 25;
 intersection() {
     back_shell();
     translate([-out_l/2 + slab/2, 0, out_h/2])
-        cube([slab, out_w + 2, out_h*2 + pod_h*2], center = true);
+        cube([slab, out_w + 2, out_h + 2], center = true);
 }
