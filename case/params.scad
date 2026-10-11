@@ -61,10 +61,15 @@ vent_slot_w    =  2.0;
 vent_slot_n    =  5;
 
 // ---- Sensorkammer am Geraet (belueftet!) ----
-// Diese Kammer ist BEWUSST offen zur Umgebungsluft. Ein dichtes Volumen
-// wuerde als Hochpass wirken und genau die tiefen Frequenzen daempfen, um
-// die es hier geht. Nicht verwechseln mit der Kalibrierkammer in
-// sensor_chamber.scad -- die ist dicht, weil sie das genau soll.
+// Diese Kammer ist BEWUSST offen zur Umgebungsluft. Begruendung steht in
+// docs/09-sensorkammer-spezifikation.md und lautet NICHT "Hochpass" --
+// das galt frueher hier und war falsch. Der BMP581 ist ein Absolutsensor,
+// kein Mikrofon: eine dichte starre Kammer liefert ihm gar kein
+// Wechselsignal, eine belueftete wirkt als TIEFpass. Die Helmholtz-
+// Frequenz muss darum ueber dem Band liegen -- grosse Oeffnung, kleines
+// Volumen. Pruefen mit tools/chamber_calc.py.
+// Nicht verwechseln mit der Kalibrierkammer in sensor_chamber.scad --
+// die ist dicht, weil sie das genau soll.
 // Sie liegt als abgetrennter Streifen OBEN in derselben Ebene wie die
 // Elektronik, nicht als Beule auf der Rueckseite. Ein abstehender Pod
 // verlagert das Gewicht nach hinten, laesst sich nicht ablegen und bricht
