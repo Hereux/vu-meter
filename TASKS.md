@@ -106,7 +106,10 @@ Der hardwareunabhängige Teil ist **vorgezogen und fertig** — er brauchte kein
 
 ## Phase 6 — Gehäuse  (~2-3 Tage inkl. Druckzeit) — Modell fertig, Rest braucht Hardware
 
-- [x] 6.1 OpenSCAD-Modell erstellt (`case/`): Rückschale mit belüfteter Sensorkammer, Frontblende, Kalibrierkammer, Passungslehre, 1:1-Papiervorlage. Alle STLs als manifold geprüft.
+- [x] 6.1 OpenSCAD-Modell erstellt (`case/`): Rückschale, Frontblende, Kalibrierkammer, Passungslehre, 1:1-Papiervorlage. Alle STLs als manifold geprüft.
+- [x] 6.1b **Umbau nach Rückmeldung:** Sensorkammer vom Pod auf der Rückseite in einen abgetrennten Streifen oben verlegt (Gewichtsverteilung, Ablegbarkeit, Bruchgefahr), seitlicher Taster in der Stirnwand ergänzt. Neu 103,6 × 98,2 × 17,0 mm.
+- [ ] 6.1c **Vorher entscheiden:** 98 mm Breite kommen vom 1-Zoll-Sensorboard. Mit der Micro-Variante wären es 83,8 mm, mit einem 6-mm-Taster statt 12 mm nur 12 statt 17 mm Höhe.
+- [ ] 6.1d Inline-Gehäuse für die Stromversorgung — über der Platine bleiben nur 5 mm, ein DC/DC-Modul braucht rund 10.
 - [ ] 6.1a **Platine vermessen** und die `MESSEN`-Werte in `case/params.scad` eintragen. Die Startwerte sind geraten — die Netzangaben zum Board widersprechen sich.
 - [ ] 6.2 Papiervorlage bei 100 % ausdrucken, Platine drauflegen. Dann Passungslehre drucken (`make -C case fit`, ~15 min), erst danach das Gehäuse (~6 h).
 - [ ] 6.3 Vollständiger Druck in ASA/PETG, Gewindeeinsätze einschmelzen.

@@ -54,14 +54,23 @@ vent_slot_n    =  5;
 // wuerde als Hochpass wirken und genau die tiefen Frequenzen daempfen, um
 // die es hier geht. Nicht verwechseln mit der Kalibrierkammer in
 // sensor_chamber.scad -- die ist dicht, weil sie das genau soll.
-pod_l          = 28.0;
-pod_w          = 26.0;
-pod_h          = 12.0;
-pod_off_l      = 24.0;  // Versatz aus der Gehaeusemitte, Laengsrichtung
-sensor_pcb_l   = 25.4;  // MESSEN: Breakout-Platine, hier SparkFun Qwiic (1 x 1 Zoll)
-sensor_pcb_w   = 25.4;  // MESSEN
+// Sie liegt als abgetrennter Streifen OBEN in derselben Ebene wie die
+// Elektronik, nicht als Beule auf der Rueckseite. Ein abstehender Pod
+// verlagert das Gewicht nach hinten, laesst sich nicht ablegen und bricht
+// als erstes ab.
+sensor_pcb_l   = 25.4;  // MESSEN: Breakout, SparkFun Qwiic = 1 Zoll
+sensor_pcb_w   = 25.4;  // MESSEN. Die Micro-Variante ist viel kleiner und
+                        // wuerde das Gehaeuse um rund 14 mm schrumpfen.
+divider_t      =  2.4;  // Trennwand zwischen Kammer und Elektronik
 foam_t         =  2.0;  // Moosgummi zur Entkopplung
-cable_hole_d   =  6.0;
+cable_hole_d   =  6.0;  // Kabeldurchlass durch die Trennwand
+
+// ---- Seitlicher Taster ----
+// In der Stirnwand auf Hoehe der Sensorkammer: nach innen steht dort die
+// Kammer zur Verfuegung. In der Elektronikkammer waere kein Platz fuer den
+// Koerper des Tasters, dort sitzt die Platine.
+btn_d          = 12.2;  // MESSEN: Bohrung fuer den Einbautaster
+btn_at_right   = true;  // false setzt ihn auf die andere Stirnseite
 
 // ---- Kabeldurchfuehrung ----
 grommet_d      =  7.0;
@@ -93,10 +102,22 @@ cav_w  = pcb_w + 2*gap;
 col_span_l = cav_l + corner_col;          // Mittenabstand der Eckpfeiler
 col_span_w = cav_w + corner_col;
 out_l  = col_span_l + corner_col + 2*wall;
-out_w  = col_span_w + corner_col + 2*wall;
 cav_h  = pcb_bot_h + pcb_t + pcb_top_h;
+
+// Elektronikkammer unten, Sensorkammer als Streifen darueber.
+elec_cav_w = cav_w + 2*corner_col;        // Innenmass quer
+cham_cav_w = sensor_pcb_w + 2*gap + 2;    // Innenmass der Kammer quer
+out_w  = wall + elec_cav_w + divider_t + cham_cav_w + wall;
+
+// Mittellinien beider Kammern in Querrichtung
+elec_cy = -out_w/2 + wall + elec_cav_w/2;
+cham_cy =  out_w/2 - wall - cham_cav_w/2;
+
 // Die Pads reichen von der Blendenunterseite bis knapp auf die Platine.
-// 0,3 mm Luft, damit das Moosgummi den Rest uebernimmt und die Platine nicht
-// verspannt wird.
-press_h = pcb_top_h - 0.3;
-out_h  = floor_t + cav_h;
+// Sie haengen an out_h, nicht an der Platinenhoehe -- sonst erreichen sie die
+// Platine nicht mehr, sobald das Gehaeuse wegen des Tasters hoeher wird.
+press_h = out_h - (floor_t + pcb_bot_h + pcb_t) - 0.3;
+
+// Hoehe muss die Tasterbohrung aufnehmen, sonst bleibt rund um sie keine
+// Wand stehen.
+out_h  = max(floor_t + cav_h, btn_d + 2*wall);

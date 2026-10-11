@@ -47,6 +47,7 @@ Mit dem Messschieber an die Platine, Werte in `params.scad` eintragen:
 | `usb_w`, `usb_h`, `usb_off` | USB-Buchse: Breite, Höhe, Versatz aus der Mitte |
 | `sd_w`, `sd_h`, `sd_off` | microSD-Schlitz |
 | `insert_d`, `insert_h` | die tatsächlich gelieferten Gewindeeinsätze |
+| `btn_d` | Bohrung des Tasters — bestimmt die Gehäusehöhe |
 | `sensor_pcb_l/w` | Breakout-Platine des BMP581 |
 
 ## Teile
@@ -54,17 +55,45 @@ Mit dem Messschieber an die Platine, Werte in `params.scad` eintragen:
 | Datei | Was | Druckzeit |
 |---|---|---|
 | `stl/fit_test.stl` | Passungslehre — **das zuerst** | ~15 min |
-| `stl/back.stl` | Rückschale mit Sensorkammer | ~4 h |
+| `stl/back.stl` | Rückschale mit Sensorkammer oben | ~5 h |
 | `stl/bezel.stl` | Frontblende | ~2 h |
 | `stl/cal_cup.stl` + `cal_lid.stl` | Kalibrierkammer, siehe unten | ~1,5 h |
 
+## Aufbau
+
+Ein flacher Kasten, **103,6 × 98,2 × 17,0 mm**. Unten die Elektronik mit dem
+Display, oben ein durch eine Wand abgetrennter Streifen als Sensorkammer — in
+derselben Ebene, nicht als Beule auf der Rückseite. Ein abstehender Pod
+verlagert das Gewicht nach hinten, lässt sich nicht ablegen und bricht als
+erstes ab.
+
+Die Höhe von 17 mm kommt vom seitlichen Taster: seine 12-mm-Bohrung braucht
+Wand drumherum. Der Taster sitzt in der Stirnwand auf Höhe der Sensorkammer —
+in der Elektronikkammer wäre kein Platz für seinen Körper.
+
+Stellschrauben für die Größe, falls 98 mm zu viel sind:
+
+- **Kleinerer Sensor.** Die Qwiic-Micro-Variante statt des 1-Zoll-Boards macht
+  83,8 statt 98,2 mm (`sensor_pcb_w` in `params.scad`).
+- **Flacherer Taster.** Ein 6-mm-Taster mit gedruckter Kappe brächte die Höhe
+  zurück auf 12 mm (`btn_d`).
+
+## Die Stromversorgung passt nicht hinein
+
+Über der Platine bleiben nur **5 mm**. Ein DC/DC-Modul ist rund 10 mm hoch,
+dazu kämen Sicherungshalter, TVS und Elkos.
+
+Das ist kein Versehen, sondern die bessere Aufteilung: **die Versorgung gehört
+in ein eigenes Inline-Gehäuse am Kabel.** Die Sicherung muss ohnehin nah an die
+Einspeisung, nicht ans Display. Das Anzeigegerät bleibt so flach und leicht.
+
 ## Die zwei Kammern nicht verwechseln
 
-**Sensorkammer am Gerät** (`case.scad`, `sensor_pod`): auf allen vier Seiten
-**offen**. Genau so soll es sein — ein dichtes Volumen wirkt als Hochpass und
-dämpft die tiefen Frequenzen weg, um die es hier geht. Über die Öffnungen kommt
-offenporiger Schaumstoff gegen Staub und direkten Luftzug; der ist bei diesen
-Frequenzen akustisch transparent.
+**Sensorkammer am Gerät**: über Schlitze an der Oberkante und im Boden
+**offen** zur Umgebungsluft. Genau so soll es sein — ein dichtes Volumen wirkt
+als Hochpass und dämpft die tiefen Frequenzen weg, um die es hier geht. Über
+die Öffnungen kommt offenporiger Schaumstoff gegen Staub und direkten Luftzug;
+der ist bei diesen Frequenzen akustisch transparent.
 
 **Kalibrierkammer** (`sensor_chamber.scad`): **dicht**. Nur in einem
 geschlossenen Volumen lässt sich dem Sensor ein bekannter Überdruck vorsetzen.

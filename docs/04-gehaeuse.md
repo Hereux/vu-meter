@@ -28,6 +28,21 @@ aus).
    - Lüftungsschlitze für den DC/DC-Wandler
 ```
 
+## Aufbau: flacher Kasten, Sensorkammer oben
+
+103,6 × 98,2 × 17,0 mm. Unten die Elektronik mit dem Display, oben ein
+abgetrennter Streifen als Sensorkammer, in derselben Ebene. Bedienung über
+einen seitlichen Taster in der Stirnwand auf Kammerhöhe.
+
+Die frühere Variante hatte die Kammer als Pod auf der Rückseite. Das war
+schlechter: das Gewicht lag hinten, das Gerät ließ sich nicht ablegen, und der
+vorstehende Pod wäre als erstes abgebrochen.
+
+**Die Stromversorgung gehört nicht hinein.** Über der Platine bleiben 5 mm, ein
+DC/DC-Modul braucht rund 10. Sicherung, Wandler und Schutzbeschaltung kommen in
+ein eigenes Inline-Gehäuse am Kabel — die Sicherung muss ohnehin nah an die
+Einspeisung.
+
 ## Der Druckport — der kritische Teil
 
 Fehler Nummer eins bei solchen Geräten: ein dichtes Gehäuse. Das eingeschlossene
