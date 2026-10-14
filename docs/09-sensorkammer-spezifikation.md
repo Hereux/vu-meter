@@ -54,7 +54,7 @@ Dämpfung — unterhalb einer Resonanz steigt die Übertragung an.
 | A4 | Öffnungen aufgeteilt | **≥ 6 statt 1 große** | kleinere Mündungskorrektur |
 | A5 | Längste Innenkante | **< 200 mm** | λ/10 bei 150 Hz = 229 mm |
 | A6 | Sensor nicht in Sichtlinie einer Öffnung | — | Luftstrahl ≠ Schalldruck |
-| A7 | Sensorplatine schwingungsentkoppelt | Moosgummi ≥ 2 mm | MEMS ist beschleunigungsempfindlich |
+| A7 | Sensorplatine **steif** befestigt | verschraubt oder geklebt | weiche Lagerung resoniert im Band |
 | A8 | Thermische Trennung von ESP32/Display | Trennwand + eigene Belüftung | Drift der Absolutanzeige |
 
 ### Zu A2/A3: das Volumen ist alles, was zusammenhängt
@@ -140,18 +140,53 @@ aber er zerlegt jeden Strahl. 3 bis 5 mm genügen.
 > **Wichtig:** offenporig, nicht geschlossenzellig. Moosgummi als Dichtung ist
 > geschlossenzellig und macht die Kammer dicht — genau das, was A1 verbietet.
 > Für die Öffnungen also Akustikschaum, Filtermatte oder ein Stück
-> Mikrofon-Windschutz; Moosgummi nur unter der Platine (A7).
+> Mikrofon-Windschutz. Unter die Sensorplatine gehört übrigens auch kein
+> Moosgummi — siehe A7, die ist steif zu befestigen.
 
 ---
 
 ## 3. Mechanik und Thermik
 
-**A7, Schwingungsentkopplung.** Bei 150 dB vibriert im Showcar alles. Ein
-MEMS-Drucksensor hat eine Querempfindlichkeit gegen Beschleunigung — die
-Membran ist eine Masse an einer Feder. Starr auf eine Gehäusewand geschraubt,
-misst der Sensor die Gehäusevibration mit und man kann hinterher nicht mehr
-trennen, was Schall war und was Rappeln. Sensorplatine deshalb auf Moosgummi,
-nicht direkt verschrauben, Kabel mit Schlaufe statt gespannt.
+**A7, Befestigung: steif, nicht weich.** Hier stand früher das Gegenteil
+(„auf Moosgummi entkoppeln“). Das war falsch, und zwar in der schädlichen
+Richtung.
+
+Ein MEMS-Drucksensor ist beschleunigungsempfindlich — die Membran ist eine
+Masse an einer Feder. Die Versuchung ist, ihn deshalb weich zu lagern. Eine
+Entkopplung wirkt aber nur **unterhalb** ihrer Eigenfrequenz; darüber
+verstärkt sie. Und die Eigenfrequenz hängt an der statischen Einfederung:
+
+| Einfederung | Eigenfrequenz |
+|---|---|
+| 0,05 mm | 70 Hz |
+| 0,2 mm | 35 Hz |
+| 1 mm | 16 Hz |
+| 10 mm | 5 Hz |
+
+Um unter die Bandgrenze von 10 Hz zu kommen, bräuchte es rund **10 mm
+statische Einfederung**. Mit einer Sensorplatine von etwa 3 g ist das nicht
+herstellbar — jeder praktikable Schaum landet mit so wenig Masse **mitten im
+Messband** und überhöht genau dort.
+
+Die starre Befestigung kostet dafür fast nichts. Im Schallfeld erfährt das
+Gerät bei 150 dB nur etwa **1,1 g** — nicht p·A, denn bei 150 Hz ist
+λ = 2,3 m gegen 0,1 m Gerätelänge, es wirkt also nur der Gradient darüber.
+Selbst bei pessimistisch angesetzten 10 Pa/g bleibt der Fehler unter 0,11 dB,
+bei realistischen Werten unter 0,03 dB.
+
+**Also: verschrauben oder fest kleben.** Kabel trotzdem mit Schlaufe statt
+gespannt — ein straffes Kabel überträgt Zug auf die Platine.
+
+**Die Lage im Raum ist egal.** Die Hydrostatik über die Bauhöhe des Sensors
+sind 0,04 Pa, der Schwerkraftoffset der Membran liegt im Bereich 1 Pa —
+beides DC und damit vom DC-Blocker entfernt. Horizontal, vertikal oder über
+Kopf macht für die SPL-Messung keinen Unterschied. Einzige praktische
+Empfehlung: Membran nach unten oder seitlich, damit Staub herausfällt statt
+hinein.
+
+**Die eine echte Vibrationsregel:** das Gerät nicht auf das Subwoofergehäuse
+legen. Dort kommt Körperschall dazu, der nicht mit dem Schalldruck am Messort
+skaliert — dann gilt die Rechnung oben nicht mehr.
 
 **A8, Thermik.** ESP32 und Displaybeleuchtung setzen etwa 0,5 bis 1 W um. Der
 BMP581 ist werkseitig temperaturkompensiert, aber nicht gegen einen
@@ -170,7 +205,7 @@ beider Kammern lösen das ausreichend.
 - [ ] `chamber_calc.py` mit den echten Werten → f_H ≥ 500 Hz
 - [ ] Öffnungen auf ≥ 6 verteilt, keine davon auf den Sensor zeigend
 - [ ] Platz für 3 bis 5 mm offenporigen Schaum hinter den Öffnungen
-- [ ] Auflage für die Sensorplatine mit 2 mm Moosgummi, nicht starr
+- [ ] Sensorplatine steif verschraubt oder geklebt, NICHT weich gelagert (A7)
 - [ ] Kabel mit Zugentlastung und Schlaufe
 - [ ] Elektronikkammer getrennt belüftet (Wärme)
 
@@ -202,8 +237,9 @@ eine Öffnung, die kleiner ist als gezeichnet (Elefantenfuß in der ersten
 Schicht), oder ein Schaumstoff, der doch geschlossenzellig ist.
 
 Zeigt sich ein **schmaler Peak** irgendwo im Band, ist es keine Helmholtz-
-Resonanz, sondern Mechanik: eine schwingende Wand oder die Sensorplatine auf
-ihrem Schaumstoff. Dann A7 nachbessern, nicht die Löcher vergrößern.
+Resonanz, sondern Mechanik: eine schwingende Wand oder eine zu weich
+befestigte Sensorplatine. Dann A7 nachbessern — steifer, nicht weicher —
+und nicht die Löcher vergrößern.
 
 ---
 
