@@ -15,6 +15,7 @@
 
 #include "../include/config.h"
 #include "bmp581.h"
+#include "xpt2046.h"
 #include "meter.h"
 
 namespace {
@@ -193,6 +194,13 @@ static_assert(kSpecY + kSpecH + kSpecGap <= kStatusY,
               "Spektrum ragt in die Statuszeile");
 static_assert(kStatusY + kFontSmallH <= kScreenH,
               "Statuszeile ragt ueber den unteren Bildrand");
+
+// Unterste Zeile des Kalibrierschirms. Gleiche Absicherung wie beim
+// Spektrum: die Statuszeile wurde hier schon einmal angeschnitten, und das
+// faellt auf dem Display nur auf, wenn man gezielt hinsieht.
+constexpr int kCalibTouchY = 186;
+static_assert(kCalibTouchY + kFontSmallH <= kStatusY,
+              "Touchzeile des Kalibrierschirms ragt in die Statuszeile");
 static_assert(kSpecX + kSpecW <= kScreenW,
               "Spektrum ragt ueber den rechten Bildrand");
 static_assert(kSpecH > 0, "Kein Platz fuer das Spektrum");
@@ -352,9 +360,17 @@ void drawCalib(const vu::Report& r) {
     tft.setTextPadding(kPadCalibSmall);
     tft.drawString(buf, 8, 164, 2);
 
+    // Rohwert des Beruehrungsdrucks mit der eingestellten Schwelle. Die
+    // Schwelle ist geschaetzt -- hier laesst sich am Geraet ablesen, ob sie
+    // zum verbauten Panel passt: unberuehrt deutlich darunter, unter dem
+    // Finger deutlich darueber.
+    snprintf(buf, sizeof(buf), "Touch %4u / Schwelle %d        ",
+             touch::pressure(), cfg::kTouchThreshold);
+    tft.drawString(buf, 8, kCalibTouchY, 2);
+
     tft.setTextColor(r.pressurePlausible ? kDim : kWarn, kBg);
-    tft.drawString(r.pressurePlausible ? "Taste: kurz = Schirm, lang = Referenz"
-                                       : "Rohdruck unplausibel!             ",
+    tft.drawString(r.pressurePlausible ? "Tippen = Schirm, halten = Referenz   "
+                                       : "Rohdruck unplausibel!                ",
                    8, kStatusY, 2);
     tft.setTextPadding(0);
 }
@@ -415,17 +431,29 @@ void sensorTask(void*) {
     }
 }
 
-// Taster entprellen und zwischen kurz und lang unterscheiden.
+// Liefert true, solange irgendeine Eingabequelle gedrueckt ist.
+//
+// Touch und Taster sind bewusst gleichwertig und werden verodert: beide
+// loesen dieselben Ereignisse aus, der Rest des Codes muss die Quelle nicht
+// kennen. Die Entprellung in handleButton() gilt damit automatisch fuer
+// beide.
+bool inputPressed() {
+    if (touch::pressed(cfg::kTouchThreshold)) return true;
+
+    if (!cfg::kButtonEnabled) return false;
+    // Welcher Pegel "gedrueckt" bedeutet, haengt am Tastertyp -- siehe
+    // kButtonNormallyClosed in config.h.
+    const bool high = digitalRead(cfg::kButtonPin) == HIGH;
+    return high == cfg::kButtonPressedIsHigh;
+}
+
+// Eingabe entprellen und zwischen kurz und lang unterscheiden.
 // kurz -> Schirm wechseln, lang -> Haltewerte bzw. Referenz zuruecksetzen.
 void handleButton(const vu::Report& r) {
     static bool wasDown = false;
     static uint32_t downAt = 0;
 
-    // Welcher Pegel "gedrueckt" bedeutet, haengt am Tastertyp -- siehe
-    // kButtonNormallyClosed in config.h. Hier steckt ein Oeffner, bei dem
-    // gedrueckt HIGH ist.
-    const bool high = digitalRead(cfg::kButtonPin) == HIGH;
-    const bool down = (high == cfg::kButtonPressedIsHigh);
+    const bool down = inputPressed();
     const uint32_t now = millis();
 
     if (down && !wasDown) {
@@ -461,11 +489,21 @@ void handleButton(const vu::Report& r) {
 }
 
 void uiTask(void*) {
-    const TickType_t period = pdMS_TO_TICKS(1000 / cfg::kDisplayFps);
+    // Der Takt richtet sich nach der Eingabe, nicht nach dem Bild: gezeichnet
+    // wird nur jeden kTicksPerFrame-ten Durchlauf. Mit 5 Hz abgetastet gingen
+    // kurze Tipper verloren.
+    constexpr int kTicksPerFrame = cfg::kInputHz / cfg::kDisplayFps;
+    const TickType_t period = pdMS_TO_TICKS(1000 / cfg::kInputHz);
     TickType_t last = xTaskGetTickCount();
+    int tick = kTicksPerFrame;  // erster Durchlauf zeichnet sofort
     for (;;) {
         const vu::Report r = g_meter.report();
         handleButton(r);
+        if (++tick < kTicksPerFrame) {
+            vTaskDelayUntil(&last, period);
+            continue;
+        }
+        tick = 0;
         if (g_page < kProfileCount) {
             const Profile& prof = kProfiles[g_page];
             drawReadings(r, prof);
@@ -534,11 +572,17 @@ void checkButtonWiring() {
 
 void setup() {
     Serial.begin(115200);
-    // Auf reinen Eingangspins (34..39) gibt es keinen internen Pull-Up, der
-    // Aufruf mit INPUT_PULLUP wuerde dort kommentarlos nichts tun.
-    pinMode(cfg::kButtonPin,
-            cfg::kButtonExternalPullup ? INPUT : INPUT_PULLUP);
-    checkButtonWiring();
+    if (cfg::kButtonEnabled) {
+        // Auf reinen Eingangspins (34..39) gibt es keinen internen Pull-Up,
+        // der Aufruf mit INPUT_PULLUP wuerde dort kommentarlos nichts tun.
+        pinMode(cfg::kButtonPin,
+                cfg::kButtonExternalPullup ? INPUT : INPUT_PULLUP);
+        checkButtonWiring();
+    } else {
+        Serial.println("Taster abgeschaltet (kButtonEnabled), Bedienung "
+                       "ueber Touch: tippen = Seite, halten = Reset");
+    }
+    touch::begin();
 
     tft.init();
     tft.setRotation(1);  // Querformat, 320 x 240

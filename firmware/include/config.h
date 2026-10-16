@@ -14,6 +14,28 @@ constexpr int kI2cSda = 27;
 constexpr int kI2cScl = 22;
 constexpr int kI2cHz = 400000;
 
+// ---- Bedienung ----
+// Zwei moegliche Quellen, die dieselben Ereignisse ausloesen: kurz = Seite
+// weiter, lang = Haltewerte bzw. Referenz zuruecksetzen.
+//
+//   Touch   immer aktiv. Der GANZE Schirm ist die Flaeche, es gibt keine
+//           gezeichneten Schaltflaechen. Einzelne Knoepfe muessten gross
+//           genug fuer Finger ohne Stift sein und wuerden den Platz
+//           wegnehmen, auf dem die Messwerte stehen.
+//   Taster  optional, an GPIO 35. Am Prototyp vorerst abgeschaltet, weil
+//           die Verdrahtung noch nicht stimmt -- ein klemmender Eingang
+//           wuerde sonst dauernd weiterblaettern und auch die Touch-
+//           Bedienung unbrauchbar machen.
+//
+// Zum Wiedereinschalten genuegt kButtonEnabled = true. Der uebrige Code
+// bleibt stehen, damit die Verdrahtung spaeter nur noch geprueft werden
+// muss und nicht neu geschrieben.
+constexpr bool kButtonEnabled = false;
+
+// Schwelle des Beruehrungsdrucks. Der Rohwert steht im Kalibrierschirm,
+// damit er sich am Geraet nachstellen laesst, falls das Panel abweicht.
+constexpr int kTouchThreshold = 400;
+
 // ---- Taster ----
 // GPIO 35 statt 0. GPIO 0 ist der Boot-Taster des Boards und ein
 // Strapping-Pin: liegt er beim Reset auf Masse, startet der ESP32 in den
@@ -143,6 +165,15 @@ constexpr float kProfileCarSpecMax = 170.0f;
 
 // ---- Anzeige --------------------------------------------------------------
 constexpr int kDisplayFps = 5;
+// Eingaben muessen deutlich oefter abgetastet werden als das Bild neu
+// gezeichnet wird. Ein kurzer Tipp dauert 80..150 ms und ginge bei 5 Hz
+// schlicht verloren -- beim Taster faellt das kaum auf, beim Touch sofort.
+constexpr int kInputHz = 50;
+static_assert(kInputHz % kDisplayFps == 0,
+              "kInputHz muss ein Vielfaches von kDisplayFps sein, sonst "
+              "driftet die Bildrate");
+static_assert(kInputHz / kDisplayFps >= 2,
+              "Eingaben muessen oefter abgetastet werden als gezeichnet wird");
 constexpr int kLongPressMs = 600;  // Peak-Reset
 
 }  // namespace cfg

@@ -1,0 +1,51 @@
+// Minimaltreiber fuer den Touchcontroller XPT2046 des ESP32-2432S028R.
+//
+// Warum nicht ueber TFT_eSPI: der XPT2046 haengt auf dem CYD an einem
+// ANDEREN SPI-Bus als das Display (siehe Kommentar zu TOUCH_CS in
+// platformio.ini). Mit gesetztem TOUCH_CS wuerde TFT_eSPI ihn ueber den
+// Display-Bus ansprechen, und der Touch bliebe tot.
+//
+// Warum keine fertige Bibliothek: gebraucht wird genau eine Information --
+// "wird gerade beruehrt?". Dafuer reichen zwei SPI-Transfers. Eine
+// Abhaengigkeit mehr waere hier Risiko ohne Gegenwert, zumal der Build
+// sonst an einem geaenderten Registry-Namen scheitern kann.
+//
+// Bewusst OHNE Koordinaten und ohne Kalibrierung: die Bedienung nutzt den
+// ganzen Schirm als eine Flaeche. Das war die Vorgabe -- einzelne
+// Schaltflaechen muessten gross genug fuer Finger ohne Stift sein und
+// wuerden den Platz wegnehmen, auf dem die Messwerte stehen.
+#pragma once
+
+#include <SPI.h>
+#include <stdint.h>
+
+namespace touch {
+
+// Die Beruehrung wird ueber den Widerstand zwischen den Panelebenen
+// erkannt. Der Rohwert steigt mit dem Druck; unberuehrt liegt er nahe null.
+// Schwelle grosszuegig, es geht nur um "Finger drauf oder nicht".
+constexpr uint16_t kDefaultThreshold = 400;
+
+// Pins des Touchcontrollers auf dem CYD. Eigener Bus, nicht die des
+// Displays. 36 (IRQ) und 39 (MISO) sind reine Eingaenge -- hier kein
+// Problem, beide werden nur gelesen.
+constexpr int kPinSck = 25;
+constexpr int kPinMiso = 39;
+constexpr int kPinMosi = 32;
+constexpr int kPinCs = 33;
+
+// Der XPT2046 gibt erst unterhalb von etwa 2 MHz saubere Wandlungsergebnisse.
+constexpr uint32_t kSpiHz = 2000000;
+
+// Richtet den eigenen SPI-Bus ein. Einmal in setup() aufrufen, bevor
+// pressure() oder pressed() benutzt werden.
+void begin();
+
+// Rohwert des Beruehrungsdrucks, 0 .. etwa 4095. Fuer Diagnose und zum
+// Einstellen der Schwelle.
+uint16_t pressure();
+
+// true, solange das Panel beruehrt wird.
+bool pressed(uint16_t threshold = kDefaultThreshold);
+
+}  // namespace touch
