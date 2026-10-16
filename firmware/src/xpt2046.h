@@ -49,6 +49,14 @@ void begin();
 // Einstellen der Schwelle.
 uint16_t pressure();
 
+// Die beiden Rohkanaele des letzten pressure()-Aufrufs. Damit laesst sich
+// "Bus antwortet nicht" von "Schwelle passt nicht" unterscheiden:
+//   z1 = 0, z2 = 0        keine Antwort, MISO liegt fest auf Masse
+//   z1 = 4095, z2 = 4095  keine Antwort, MISO haengt offen
+//   z1 klein, z2 gross    Panel antwortet, unberuehrt
+//   z1 und z2 genaehert   Panel antwortet, beruehrt
+void raw(uint16_t& z1_out, uint16_t& z2_out);
+
 // true, solange das Panel beruehrt wird.
 bool pressed(uint16_t threshold = kDefaultThreshold);
 

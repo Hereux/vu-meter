@@ -364,8 +364,11 @@ void drawCalib(const vu::Report& r) {
     // Schwelle ist geschaetzt -- hier laesst sich am Geraet ablesen, ob sie
     // zum verbauten Panel passt: unberuehrt deutlich darunter, unter dem
     // Finger deutlich darueber.
-    snprintf(buf, sizeof(buf), "Touch %4u / Schwelle %d        ",
-             touch::pressure(), cfg::kTouchThreshold);
+    uint16_t z1 = 0, z2 = 0;
+    const uint16_t z = touch::pressure();
+    touch::raw(z1, z2);
+    snprintf(buf, sizeof(buf), "Touch %4u>%d  z %4u/%4u    ",
+             z, cfg::kTouchThreshold, z1, z2);
     tft.drawString(buf, 8, kCalibTouchY, 2);
 
     tft.setTextColor(r.pressurePlausible ? kDim : kWarn, kBg);
@@ -582,10 +585,14 @@ void setup() {
         Serial.println("Taster abgeschaltet (kButtonEnabled), Bedienung "
                        "ueber Touch: tippen = Seite, halten = Reset");
     }
-    touch::begin();
-
     tft.init();
     tft.setRotation(1);  // Querformat, 320 x 240
+
+    // Erst nach tft.init(). Die Treiber liegen zwar auf verschiedenen
+    // SPI-Peripheriegeraeten (Display VSPI, Touch HSPI), aber die
+    // umgekehrte Reihenfolge war schon einmal der Grund, warum der Touch
+    // tot blieb. Die Abhaengigkeit hier festhalten, statt sie zu riskieren.
+    touch::begin();
 
     // I2C vor dem Einschalten der Beleuchtung starten. Sollte je wieder ein
     // Pin doppelt belegt werden, faellt es dann wenigstens nicht erst nach
@@ -650,12 +657,15 @@ void loop() {
             Serial.printf("Abtastrate zu niedrig: %.2f Hz\n", g_fs);
         } else {
             const vu::Report r = g_meter.report();
+            uint16_t z1 = 0, z2 = 0;
+            const uint16_t z = touch::pressure();
+            touch::raw(z1, z2);
             Serial.printf("%s  %6.1f dB  f0 %6.2f Hz  peak %6.1f  roh %.0f Pa  "
-                          "n=%lu  ovr=%lu\n",
+                          "n=%lu  ovr=%lu  touch %u (z %u/%u)\n",
                           g_demoMode ? "DEMO" : "BMP", r.splSlow, r.f0,
                           r.splPeak, r.rawPressurePa,
                           static_cast<unsigned long>(g_samples),
-                          static_cast<unsigned long>(g_overruns));
+                          static_cast<unsigned long>(g_overruns), z, z1, z2);
         }
     }
     vTaskDelay(pdMS_TO_TICKS(200));
