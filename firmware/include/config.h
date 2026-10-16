@@ -44,6 +44,32 @@ constexpr bool isStrapping(int pin) {
 // Wird in main.cpp fuer pinMode ausgewertet und steuert die Startpruefung.
 constexpr bool kButtonExternalPullup = isInputOnly(kButtonPin);
 
+// ---- Schliesser oder Oeffner ----
+// Hier steckt ein OEFFNER (NC, normally closed). Mit dem Pull-Up gegen 3V3
+// und dem Taster gegen Masse kehrt das die Pegel gegenueber einem Schliesser
+// um:
+//
+//            Ruhe          gedrueckt
+//   NO       offen  -> HIGH   zu    -> LOW
+//   NC       zu     -> LOW    offen -> HIGH
+//
+// Steht das falsch, laeuft die Bedienung spiegelverkehrt: das Geraet
+// blaettert im Ruhezustand dauernd weiter und reagiert beim Druecken nicht.
+// Beim Tauschen des Tasters ist das die einzige Zeile, die sich aendert.
+constexpr bool kButtonNormallyClosed = true;
+
+// Daraus die Pegel. Bewusst als bool und nicht als HIGH/LOW: dieser Header
+// bleibt damit frei von Arduino.h und laesst sich auf dem PC uebersetzen,
+// wodurch die static_asserts hier auch ohne ESP32 greifen.
+constexpr bool kButtonPressedIsHigh = kButtonNormallyClosed;
+constexpr bool kButtonIdleIsHigh = !kButtonPressedIsHigh;
+
+// Der Oeffner zieht im Ruhezustand dauerhaft Strom ueber den Pull-Up:
+// 3,3 V / 10 kOhm = 0,33 mA. Gegen die rund 150 mA von ESP32 und Display
+// faellt das nicht ins Gewicht, deshalb bleibt es bei 10 kOhm -- ein
+// hochohmigerer Widerstand waere an der langen Tasterleitung deutlich
+// stoerempfindlicher.
+
 static_assert(!isStrapping(kButtonPin),
               "Taster auf einem Strapping-Pin: wer beim Einschalten drueckt, "
               "landet im Bootloader statt in der Anwendung");

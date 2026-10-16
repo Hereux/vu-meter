@@ -67,7 +67,7 @@ ist:
 | I²C SCL | 22 | |
 | Hintergrundbeleuchtung | 21 | aktiv HIGH, per PWM geregelt |
 | BMP581 VDD | 3V3 | max. 3,6 V, nicht an 5 V |
-| Taster | 35 | **externer Pull-Up 10 kΩ gegen 3V3 nötig** — siehe unten |
+| Taster | 35 | Öffner (NC), **externer Pull-Up 10 kΩ gegen 3V3 nötig** |
 
 > Pinbelegung vor dem Löten gegen die konkrete Boardrevision prüfen — bei den
 > CYD-Boards gibt es mehrere Varianten. Frei sind üblicherweise GPIO 22, 27 und
@@ -100,6 +100,35 @@ und läuft bei den gemessenen 494 Hz nie über.
 > Taster braucht deshalb einen **externen 10 kΩ gegen 3V3**. Die Firmware
 > prüft das beim Start und meldet es über die serielle Schnittstelle.
 
+### Öffner oder Schließer
+
+Verbaut ist ein **Öffner (NC)**. Mit dem Pull-Up gegen 3V3 und dem Taster
+gegen Masse kehren sich damit die Pegel um:
+
+| Tastertyp | Ruhe | gedrückt |
+|---|---|---|
+| Schließer (NO) | offen → **HIGH** | zu → **LOW** |
+| Öffner (NC) | zu → **LOW** | offen → **HIGH** |
+
+In der Firmware hängt das an einer einzigen Zeile, `kButtonNormallyClosed`
+in `firmware/include/config.h`. Steht die falsch, läuft die Bedienung
+spiegelverkehrt: das Gerät blättert im Ruhezustand dauernd weiter und
+reagiert beim Drücken nicht. Beim Tauschen des Tasters ist es die einzige
+Stelle, die sich ändert.
+
+> **Die Startprüfung kann beim Öffner einen fehlenden Pull-Up nicht sehen.**
+> Der Öffner ist im Ruhezustand geschlossen und zieht den Pin hart auf
+> Masse — mit oder ohne Widerstand. Der fehlende Pull-Up fällt erst beim
+> Drücken auf, wenn der Kontakt öffnet und der Eingang schwebt. Symptom:
+> ein Taster, der scheinbar wahllos mal reagiert und mal nicht. Beim
+> Schließer deckt die Prüfung den Fall dagegen ab.
+
+Nebeneffekt des Öffners: im Ruhezustand fließt dauerhaft Strom über den
+Pull-Up, 3,3 V / 10 kΩ = 0,33 mA. Gegen die rund 150 mA von ESP32 und
+Display fällt das nicht ins Gewicht. Ein hoch­ohmigerer Widerstand wäre an
+der langen Tasterleitung deutlich störempfindlicher, deshalb bleibt es
+bei 10 kΩ.
+
 Dazu **100 nF parallel zum Taster**. Das entprellt und ist in einem Fahrzeug
 mit 1000-W-Endstufe vor allem Störschutz: die Leitung zum seitlichen Taster
 ist eine Antenne. Mit dem 10 k ergibt sich 1 ms Zeitkonstante — unauffällig
@@ -110,9 +139,12 @@ gegenüber der 40-ms-Entprellung in der Firmware.
                |
                +---[100n]---+
                |            |
-             Taster         |
+          Taster (NC)       |
                |            |
 GND -----------+------------+
+
+      Ruhe: Kontakt zu  -> GPIO 35 = LOW
+  gedrueckt: Kontakt auf -> GPIO 35 = HIGH (ueber den Pull-Up)
 ```
 
 I²C mit 400 kHz. Bei 32-Byte-FIFO-Burst alle ~50 ms ist die Buslast minimal.

@@ -421,7 +421,11 @@ void handleButton(const vu::Report& r) {
     static bool wasDown = false;
     static uint32_t downAt = 0;
 
-    const bool down = digitalRead(cfg::kButtonPin) == LOW;  // aktiv low
+    // Welcher Pegel "gedrueckt" bedeutet, haengt am Tastertyp -- siehe
+    // kButtonNormallyClosed in config.h. Hier steckt ein Oeffner, bei dem
+    // gedrueckt HIGH ist.
+    const bool high = digitalRead(cfg::kButtonPin) == HIGH;
+    const bool down = (high == cfg::kButtonPressedIsHigh);
     const uint32_t now = millis();
 
     if (down && !wasDown) {
@@ -491,26 +495,38 @@ void splash(const char* line1, const char* line2, uint16_t color) {
 // Anzeige blaettert dann wie von Geisterhand durch die Schirme. Das sieht
 // nach einem Softwarefehler aus und ist ein fehlender Widerstand. Also
 // einmal nachsehen und es beim Namen nennen.
+//
+// GRENZE DER PRUEFUNG beim Oeffner: der ist im Ruhezustand geschlossen und
+// zieht den Pin hart auf Masse -- mit oder ohne Pull-Up. Ein fehlender
+// Widerstand faellt hier also NICHT auf, sondern erst beim Druecken, wenn
+// der Kontakt oeffnet und der Pin schwebt. Symptom ist dann ein Taster, der
+// scheinbar wahllos mal reagiert und mal nicht. Beim Schliesser deckt die
+// Pruefung den Fall dagegen ab.
 void checkButtonWiring() {
     if (!cfg::kButtonExternalPullup) return;
 
     delay(100);  // Einschwingen abwarten
-    int lows = 0;
     constexpr int kSamples = 50;
+    int idle = 0, pressed = 0;
     for (int i = 0; i < kSamples; ++i) {
-        if (digitalRead(cfg::kButtonPin) == LOW) ++lows;
+        const bool high = digitalRead(cfg::kButtonPin) == HIGH;
+        if (high == cfg::kButtonIdleIsHigh) ++idle; else ++pressed;
         delay(1);
     }
 
-    if (lows == 0) return;  // sauber HIGH, Pull-Up vorhanden
+    if (idle == kSamples) return;  // stabil im Ruhezustand, alles in Ordnung
 
-    if (lows == kSamples) {
-        Serial.printf("Taster (GPIO %d) liegt dauerhaft auf Masse: gedrueckt "
-                      "gehalten oder Kurzschluss.\n", cfg::kButtonPin);
+    const char* type = cfg::kButtonNormallyClosed ? "Oeffner" : "Schliesser";
+    if (pressed == kSamples) {
+        Serial.printf("Taster (GPIO %d, %s) meldet stabil GEDRUECKT. "
+                      "Entweder festgehalten, oder Leitung unterbrochen, "
+                      "oder kButtonNormallyClosed steht falsch.\n",
+                      cfg::kButtonPin, type);
     } else {
-        Serial.printf("Taster (GPIO %d) schwebt (%d/%d LOW). GPIO 34..39 "
-                      "haben keinen internen Pull-Up -- 10 kOhm gegen 3V3 "
-                      "nachruesten.\n", cfg::kButtonPin, lows, kSamples);
+        Serial.printf("Taster (GPIO %d, %s) schwankt (%d/%d). Fehlender "
+                      "Pull-Up: GPIO 34..39 haben keinen internen. "
+                      "10 kOhm gegen 3V3 nachruesten.\n",
+                      cfg::kButtonPin, type, pressed, kSamples);
     }
 }
 
