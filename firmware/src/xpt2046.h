@@ -16,6 +16,10 @@
 // wuerden den Platz wegnehmen, auf dem die Messwerte stehen.
 #pragma once
 
+// Arduino.h zuerst und ausdruecklich: SPI.h des ESP32-Cores zieht es NICHT
+// mit herein, pinMode, digitalWrite, HIGH/LOW und MSBFIRST kaemen sonst
+// nicht an.
+#include <Arduino.h>
 #include <SPI.h>
 #include <stdint.h>
 
