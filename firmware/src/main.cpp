@@ -484,11 +484,45 @@ void splash(const char* line1, const char* line2, uint16_t color) {
     }
 }
 
+// Prueft beim Start die Beschaltung des Tasters.
+//
+// Hintergrund: seit der Taster auf GPIO 35 liegt, braucht er einen externen
+// Pull-Up. Fehlt der, schwebt der Eingang und liefert Zufallswerte -- die
+// Anzeige blaettert dann wie von Geisterhand durch die Schirme. Das sieht
+// nach einem Softwarefehler aus und ist ein fehlender Widerstand. Also
+// einmal nachsehen und es beim Namen nennen.
+void checkButtonWiring() {
+    if (!cfg::kButtonExternalPullup) return;
+
+    delay(100);  // Einschwingen abwarten
+    int lows = 0;
+    constexpr int kSamples = 50;
+    for (int i = 0; i < kSamples; ++i) {
+        if (digitalRead(cfg::kButtonPin) == LOW) ++lows;
+        delay(1);
+    }
+
+    if (lows == 0) return;  // sauber HIGH, Pull-Up vorhanden
+
+    if (lows == kSamples) {
+        Serial.printf("Taster (GPIO %d) liegt dauerhaft auf Masse: gedrueckt "
+                      "gehalten oder Kurzschluss.\n", cfg::kButtonPin);
+    } else {
+        Serial.printf("Taster (GPIO %d) schwebt (%d/%d LOW). GPIO 34..39 "
+                      "haben keinen internen Pull-Up -- 10 kOhm gegen 3V3 "
+                      "nachruesten.\n", cfg::kButtonPin, lows, kSamples);
+    }
+}
+
 }  // namespace
 
 void setup() {
     Serial.begin(115200);
-    pinMode(cfg::kButtonPin, INPUT_PULLUP);
+    // Auf reinen Eingangspins (34..39) gibt es keinen internen Pull-Up, der
+    // Aufruf mit INPUT_PULLUP wuerde dort kommentarlos nichts tun.
+    pinMode(cfg::kButtonPin,
+            cfg::kButtonExternalPullup ? INPUT : INPUT_PULLUP);
+    checkButtonWiring();
 
     tft.init();
     tft.setRotation(1);  // Querformat, 320 x 240

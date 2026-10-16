@@ -13,8 +13,42 @@ namespace cfg {
 constexpr int kI2cSda = 27;
 constexpr int kI2cScl = 22;
 constexpr int kI2cHz = 400000;
-constexpr int kSensorIntPin = 35;  // optional, nur Eingang
-constexpr int kButtonPin = 0;      // Boot-Taster, alternativ Touch
+
+// ---- Taster ----
+// GPIO 35 statt 0. GPIO 0 ist der Boot-Taster des Boards und ein
+// Strapping-Pin: liegt er beim Reset auf Masse, startet der ESP32 in den
+// Bootloader statt in die Anwendung. Bei einem seitlichen Taster am Geraet
+// heisst das, dass jedes Einschalten mit gedruecktem Taster wie ein Defekt
+// aussieht -- im Fahrzeug mit Zuendungsplus passiert das frueher oder
+// spaeter. Ausserdem ist GPIO 0 auf dem CYD gar nicht auf einen Stecker
+// herausgefuehrt, ein externer Taster muesste an die Pads geloetet werden.
+//
+// Damit bleibt GPIO 35: der einzige noch freie herausgefuehrte Pin. Der
+// bisher dort vorgesehene Data-Ready-Interrupt des BMP581 entfaellt dafuer
+// ersatzlos -- gebraucht wurde er nie, die FIFO wird alle 20 ms gepollt
+// (kFifoReadIntervalMs), und bei gemessenen 494 Hz Abtastrate laeuft sie
+// dabei nie ueber.
+constexpr int kButtonPin = 35;
+
+// GPIO 34..39 sind REINE EINGAENGE OHNE interne Pull-Widerstaende.
+// pinMode(pin, INPUT_PULLUP) wird dort stillschweigend ignoriert; der Pin
+// bleibt offen und liefert Zufallswerte. Ein Taster auf diesen Pins braucht
+// deshalb zwingend einen externen Pull-Up, 10 kOhm gegen 3V3.
+constexpr bool isInputOnly(int pin) { return pin >= 34 && pin <= 39; }
+
+// Strapping-Pins legen beim Reset den Bootmodus fest. Kein Taster darauf.
+constexpr bool isStrapping(int pin) {
+    return pin == 0 || pin == 2 || pin == 5 || pin == 12 || pin == 15;
+}
+
+// Wird in main.cpp fuer pinMode ausgewertet und steuert die Startpruefung.
+constexpr bool kButtonExternalPullup = isInputOnly(kButtonPin);
+
+static_assert(!isStrapping(kButtonPin),
+              "Taster auf einem Strapping-Pin: wer beim Einschalten drueckt, "
+              "landet im Bootloader statt in der Anwendung");
+static_assert(kButtonPin != kI2cSda && kButtonPin != kI2cScl,
+              "Taster liegt auf einem I2C-Pin");
 
 // ---- Hintergrundbeleuchtung ----
 // Aktiv HIGH. Wird per PWM angesteuert, damit sich die Helligkeit regeln
@@ -34,6 +68,8 @@ static_assert(kI2cSda != kBacklightPin,
 static_assert(kI2cScl != kBacklightPin,
               "I2C-SCL liegt auf dem Backlight-Pin: Wire.begin() wuerde die "
               "Hintergrundbeleuchtung ausschalten");
+static_assert(kButtonPin != kBacklightPin,
+              "Taster liegt auf dem Backlight-Pin");
 
 // Adressen, Register und Kennungen des BMP581 stehen in src/bmp581_regs.h,
 // belegt aus der offiziellen Bosch-API. Hier doppelt gefuehrt zu werden waere

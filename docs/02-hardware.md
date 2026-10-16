@@ -13,7 +13,7 @@
    +-- 2.8" TFT 320x240 ILI9341 (SPI, onboard)
    +-- microSD (SPI, onboard)  -> Logging
    +-- I2C (GPIO 27 SDA / 22 SCL)              --> BMP581
-   +-- Taster (GPIO 35 o. Touch)               --> Mode / Peak-Reset
+   +-- Taster (GPIO 35, ext. Pull-Up 10k)      --> Mode / Peak-Reset
    +-- WLAN (optional)                          --> Web-UI / OTA
 ```
 
@@ -67,8 +67,7 @@ ist:
 | I²C SCL | 22 | |
 | Hintergrundbeleuchtung | 21 | aktiv HIGH, per PWM geregelt |
 | BMP581 VDD | 3V3 | max. 3,6 V, nicht an 5 V |
-| BMP581 INT | 35 | optional, Data-Ready-Interrupt (nur Eingang!) |
-| Taster | 0 / Touch | Peak-Reset |
+| Taster | 35 | **externer Pull-Up 10 kΩ gegen 3V3 nötig** — siehe unten |
 
 > Pinbelegung vor dem Löten gegen die konkrete Boardrevision prüfen — bei den
 > CYD-Boards gibt es mehrere Varianten. Frei sind üblicherweise GPIO 22, 27 und
@@ -81,6 +80,40 @@ sie benutzt, bekommt ein funktionierendes Display mit dunkler Beleuchtung —
 `Wire.begin()` konfiguriert GPIO 21 um und schaltet das Licht aus. Genau das
 ist hier einmal passiert. `firmware/include/config.h` fängt es seitdem zur
 Übersetzungszeit mit einem `static_assert` ab.
+
+**Der Taster liegt auf GPIO 35, nicht auf GPIO 0.** Zwei Gründe:
+
+1. **GPIO 0 ist ein Strapping-Pin.** Liegt er beim Reset auf Masse, startet
+   der ESP32 in den Bootloader statt in die Anwendung. Bei einem seitlichen
+   Taster heißt das: wer beim Einschalten drückt, hat ein scheinbar totes
+   Gerät. An Zündungsplus im Fahrzeug passiert das früher oder später.
+2. **GPIO 0 ist nicht herausgeführt.** Der Boot-Taster sitzt auf der
+   Platine; ein externer Taster müsste an dessen Pads gelötet werden.
+
+Dafür entfällt der Data-Ready-Interrupt des BMP581, der vorher auf 35
+vorgesehen war. Gebraucht wurde er nie — die FIFO wird alle 20 ms gepollt
+und läuft bei den gemessenen 494 Hz nie über.
+
+> **GPIO 34–39 haben keine internen Pull-Widerstände.** `INPUT_PULLUP` wird
+> dort kommentarlos ignoriert, der Eingang schwebt und liefert Zufallswerte —
+> die Anzeige blättert dann scheinbar von selbst durch die Schirme. Der
+> Taster braucht deshalb einen **externen 10 kΩ gegen 3V3**. Die Firmware
+> prüft das beim Start und meldet es über die serielle Schnittstelle.
+
+Dazu **100 nF parallel zum Taster**. Das entprellt und ist in einem Fahrzeug
+mit 1000-W-Endstufe vor allem Störschutz: die Leitung zum seitlichen Taster
+ist eine Antenne. Mit dem 10 k ergibt sich 1 ms Zeitkonstante — unauffällig
+gegenüber der 40-ms-Entprellung in der Firmware.
+
+```
+3V3 ---[10k]---+--- GPIO 35
+               |
+               +---[100n]---+
+               |            |
+             Taster         |
+               |            |
+GND -----------+------------+
+```
 
 I²C mit 400 kHz. Bei 32-Byte-FIFO-Burst alle ~50 ms ist die Buslast minimal.
 Kabel zum Sensor kurz halten (<30 cm) oder auf SPI wechseln.
