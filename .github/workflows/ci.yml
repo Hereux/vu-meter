@@ -119,7 +119,23 @@ jobs:
         run: pip install --upgrade platformio
 
       - name: Bauen
-        run: pio run -e esp32
+        run: set -o pipefail; pio run -e esp32 2>&1 | tee build.log
+        working-directory: firmware
+
+      # Der Schrittlog liegt auf Azure-Blob-Storage und ist aus manchen
+      # Netzen heraus nicht abrufbar (403). Compilerfehler werden deshalb
+      # zusaetzlich als Annotationen ausgegeben -- die kommen ueber die
+      # GitHub-API und sind damit auch dann lesbar.
+      - name: Fehler als Annotation ausgeben
+        if: failure()
+        run: |
+          grep -E '(error|Error|fatal):' build.log | head -30 | while IFS= read -r line; do
+            echo "::error::$line"
+          done
+          echo "### Bauen fehlgeschlagen" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          tail -60 build.log >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
         working-directory: firmware
 
       - name: Speicherbelegung ausgeben
