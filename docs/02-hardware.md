@@ -100,6 +100,32 @@ und läuft bei den gemessenen 494 Hz nie über.
 > Taster braucht deshalb einen **externen 10 kΩ gegen 3V3**. Die Firmware
 > prüft das beim Start und meldet es über die serielle Schnittstelle.
 
+### Touchbedienung
+
+Der ganze Schirm ist die Schaltfläche: tippen = Seite weiter, halten =
+Haltewerte bzw. Referenz zurücksetzen. Keine gezeichneten Knöpfe, deshalb
+auch keine Touchkalibrierung — gebraucht wird nur "wird berührt".
+
+Der XPT2046 hängt auf dem CYD an einem **anderen SPI-Bus als das Display**.
+TFT_eSPI benutzt ohne `USE_HSPI_PORT` das globale `SPI`-Objekt, und das ist
+**VSPI**. Der Touchtreiber muss deshalb auf **HSPI** liegen; beide auf
+demselben Peripheriegerät heißt, dass der zuletzt aufgerufene `begin()` die
+Pins umlegt und der andere ins Leere sendet. Genau daran ist es beim ersten
+Versuch gescheitert.
+
+| Signal | GPIO |
+|---|---|
+| T_CLK | 25 |
+| T_DO (MISO) | 39 |
+| T_DIN (MOSI) | 32 |
+| T_CS | 33 |
+
+**Am Prototyp gemessen**, Ruhezustand: `z1 = 0`, `z2 = 4084–4094`, daraus
+Druckwert **11**. Gegen die Schwelle von 400 ist das Faktor 36 Abstand —
+da löst nichts versehentlich aus. Sollte das Tippen einmal zu fest geraten
+müssen, ließe sich `kTouchThreshold` bis etwa 150 senken, ohne dem Rauschen
+nahe zu kommen.
+
 ### Öffner oder Schließer
 
 Verbaut ist ein **Öffner (NC)**. Mit dem Pull-Up gegen 3V3 und dem Taster

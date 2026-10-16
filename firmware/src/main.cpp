@@ -365,8 +365,7 @@ void drawCalib(const vu::Report& r) {
     // zum verbauten Panel passt: unberuehrt deutlich darunter, unter dem
     // Finger deutlich darueber.
     uint16_t z1 = 0, z2 = 0;
-    const uint16_t z = touch::pressure();
-    touch::raw(z1, z2);
+    const uint16_t z = touch::pressure(&z1, &z2);
     snprintf(buf, sizeof(buf), "Touch %4u>%d  z %4u/%4u    ",
              z, cfg::kTouchThreshold, z1, z2);
     tft.drawString(buf, 8, kCalibTouchY, 2);
@@ -658,8 +657,7 @@ void loop() {
         } else {
             const vu::Report r = g_meter.report();
             uint16_t z1 = 0, z2 = 0;
-            const uint16_t z = touch::pressure();
-            touch::raw(z1, z2);
+            const uint16_t z = touch::pressure(&z1, &z2);
             Serial.printf("%s  %6.1f dB  f0 %6.2f Hz  peak %6.1f  roh %.0f Pa  "
                           "n=%lu  ovr=%lu  touch %u (z %u/%u)\n",
                           g_demoMode ? "DEMO" : "BMP", r.splSlow, r.f0,

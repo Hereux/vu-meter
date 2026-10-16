@@ -15,10 +15,6 @@ namespace {
 SPIClass g_spi(HSPI);
 bool g_ready = false;
 
-// Letzte Rohwerte, nur fuer die Diagnoseanzeige.
-uint16_t g_lastZ1 = 0;
-uint16_t g_lastZ2 = 0;
-
 // Steuerbytes des XPT2046.
 //   Bit 7    Startbit, immer 1
 //   Bit 6..4 Kanal
@@ -49,13 +45,12 @@ void begin() {
     g_ready = true;
 }
 
-void raw(uint16_t& z1_out, uint16_t& z2_out) {
-    z1_out = g_lastZ1;
-    z2_out = g_lastZ2;
-}
-
-uint16_t pressure() {
-    if (!g_ready) return 0;
+uint16_t pressure(uint16_t* z1_out, uint16_t* z2_out) {
+    if (!g_ready) {
+        if (z1_out) *z1_out = 0;
+        if (z2_out) *z2_out = 0;
+        return 0;
+    }
 
     g_spi.beginTransaction(SPISettings(kSpiHz, MSBFIRST, SPI_MODE0));
     digitalWrite(kPinCs, LOW);
@@ -66,11 +61,12 @@ uint16_t pressure() {
     readChannel(kCmdZ1);
     const uint16_t z1 = readChannel(kCmdZ1);
     const uint16_t z2 = readChannel(kCmdZ2);
-    g_lastZ1 = z1;
-    g_lastZ2 = z2;
 
     digitalWrite(kPinCs, HIGH);
     g_spi.endTransaction();
+
+    if (z1_out) *z1_out = z1;
+    if (z2_out) *z2_out = z2;
 
     // Plausibilitaet VOR der Rechnung. Bei einem echten Panel ist z1 immer
     // kleiner als z2: unberuehrt geht z1 gegen null und z2 gegen

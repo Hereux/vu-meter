@@ -47,15 +47,20 @@ void begin();
 
 // Rohwert des Beruehrungsdrucks, 0 .. etwa 4095. Fuer Diagnose und zum
 // Einstellen der Schwelle.
-uint16_t pressure();
-
-// Die beiden Rohkanaele des letzten pressure()-Aufrufs. Damit laesst sich
-// "Bus antwortet nicht" von "Schwelle passt nicht" unterscheiden:
+//
+// Ueber z1_out und z2_out kommen auf Wunsch die beiden Rohkanaele DERSELBEN
+// Messung mit heraus. Damit laesst sich unterscheiden:
 //   z1 = 0, z2 = 0        keine Antwort, MISO liegt fest auf Masse
 //   z1 = 4095, z2 = 4095  keine Antwort, MISO haengt offen
 //   z1 klein, z2 gross    Panel antwortet, unberuehrt
 //   z1 und z2 genaehert   Panel antwortet, beruehrt
-void raw(uint16_t& z1_out, uint16_t& z2_out);
+//
+// Bewusst als Ausgabeparameter und nicht ueber gespeicherte Werte: auf den
+// Treiber greifen drei Tasks zu (Eingabe mit 50 Hz, Anzeige mit 5 Hz,
+// serielles Lebenszeichen). Lagen die Rohwerte in Globals, konnte zwischen
+// "Druck holen" und "Rohwerte holen" eine fremde Messung dazwischenfunken --
+// die angezeigten Zahlen passten dann nicht zueinander.
+uint16_t pressure(uint16_t* z1_out = nullptr, uint16_t* z2_out = nullptr);
 
 // true, solange das Panel beruehrt wird.
 bool pressed(uint16_t threshold = kDefaultThreshold);
